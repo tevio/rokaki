@@ -1,8 +1,8 @@
 # Rokaki
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/rokaki`. To experiment with that code, run `bin/console` for an interactive prompt.
+This gem was born out of a desire to dry up filtering services in Rails or any ruby app that uses the concept of `filters`.
 
-TODO: Delete this and the text above, and describe your gem
+It's a simple gem that just provides you with a basic dsl based on the filter params that you might pass through from a web request.
 
 ## Installation
 
@@ -22,7 +22,36 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+To use the basic DSL include the `Rokaki::Filterable` module
+
+A simple example might be:-
+
+```
+  class FilterArticles
+    include Rokaki::Filterable
+
+    def initialize(filters:)
+      @filters = filters
+      @articles = Article
+    end
+    attr_accessor :filters
+
+    define_filter_keys :date, author: [:first_name, :last_name]
+
+    def filter_results
+      @articles = @articles.where(date: date) if date
+      @articles = @articles.joins(:author).where(author: { first_name: author_first_name }) if author_first_name
+    end
+  end
+```
+
+This would map attributes `date`, `author_first_name` and `author_last_name`, from a filters object with the structure `{ date: '10-10-10', author: { first_name: 'Shteeve' } }`.
+
+## Additional options
+You can specify a `filter_key_prefix` and a `filter_key_infix` to change the structure of the accessors.
+
+`filter_key_prefix :__` would result in key accessors like `__author_first_name`
+`filter_key_infix :__` would result in key accessors like `author__first_name`
 
 ## Development
 
