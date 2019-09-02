@@ -9,16 +9,12 @@ It's a simple gem that just provides you with a basic dsl based on the filter pa
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'rokaki'
+gem 'rokaki', git: 'https://github.com/tevio/rokaki.git'
 ```
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install rokaki
 
 ## Usage
 
@@ -45,7 +41,7 @@ A simple example might be:-
   end
 ```
 
-This would map attributes `date`, `author_first_name` and `author_last_name`, from a filters object with the structure `{ date: '10-10-10', author: { first_name: 'Shteeve' } }`.
+This maps attributes `date`, `author_first_name` and `author_last_name` to a filters object with the structure `{ date: '10-10-10', author: { first_name: 'Shteeve' } }`.
 
 ## Additional options
 You can specify a `filter_key_prefix` and a `filter_key_infix` to change the structure of the accessors.
@@ -61,7 +57,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/rokaki. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/tevio/rokaki. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
@@ -69,4 +65,4 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the Rokaki project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/rokaki/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the Rokaki project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/tevio/rokaki/blob/master/CODE_OF_CONDUCT.md).
