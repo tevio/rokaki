@@ -2,6 +2,7 @@
 
 require 'rokaki/version'
 require 'rokaki/filterable'
+require 'rokaki/filter_model'
 
 module Rokaki
   class Error < StandardError; end

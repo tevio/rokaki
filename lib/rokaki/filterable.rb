@@ -36,7 +36,7 @@ module Rokaki
           filters += "[:#{key}]"
         end
 
-        class_eval "def #{name}; #{filters}; end;", __FILE__, __LINE__
+        class_eval "def #{name}; filters.dig(*#{keys}); end;", __FILE__, __LINE__
       end
 
       def _nested_key(filters_object)

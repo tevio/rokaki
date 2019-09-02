@@ -49,6 +49,41 @@ You can specify a `filter_key_prefix` and a `filter_key_infix` to change the str
 `filter_key_prefix :__` would result in key accessors like `__author_first_name`
 `filter_key_infix :__` would result in key accessors like `author__first_name`
 
+### ActiveRecord
+Include `Rokaki::FilterModel` in any ActiveRecord model (only AR >= 6.0.0 tested so far) you can generate the filter keys and the actual filter lookup code using the `filters` keyword on a model like so:-
+
+```
+# Given the models
+class Author < ActiveRecord::Base
+  has_many :articles, inverse_of: :author
+end
+
+class Article < ActiveRecord::Base
+  belongs_to :author, inverse_of: :articles, required: true
+end
+
+
+class ArticleFilter
+  include FilterModel
+
+  filters :date, :title, author: [:first_name, :last_name]
+
+  attr_accessor :filters
+
+  def initialize(filters:, model: Article)
+    @filters = filters
+    @model = model
+  end
+end
+
+filter = ArticleFilter.new(filters: params[:filters])
+
+filtered_results = filter.results
+
+* note: This will currently return full text matches (I hope to add partial matching with like and ilike soon)
+```
+
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
