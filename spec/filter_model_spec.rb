@@ -44,11 +44,11 @@ module Rokaki
     let(:article_1_published) { DateTime.now }
 
     let(:article_titles) do
-      ['Article Title 0',
-       'Article Title 1',
-       'Article Title 2',
-       'Article Title 3',
-       'Article Title 4']
+      ['Article 0 Title',
+       'Article 1 Title',
+       'Article 2 Title',
+       'Article 3 Title',
+       'Article 4 Title']
     end
 
     let(:article_contents) do
@@ -82,11 +82,20 @@ module Rokaki
       )
     end
 
-    let!(:article_1) do
+    let!(:article_1_auth_1) do
       Article.create!(
         title: article_titles[1],
         content: article_contents[1],
         published: article_published[1],
+        author: author_1
+      )
+    end
+
+    let!(:article_2_auth_1) do
+      Article.create!(
+        title: article_titles[2],
+        content: article_contents[2],
+        published: article_published[2],
         author: author_1
       )
     end
@@ -98,7 +107,7 @@ module Rokaki
       )
     end
 
-    let!(:article_2) do
+    let!(:article_3_auth_2) do
       Article.create!(
         title: article_titles[2],
         content: article_contents[2],
@@ -108,36 +117,107 @@ module Rokaki
     end
 
     context 'filter simple' do
-      class FilterModelTest
-        include FilterModel
+      let(:dummy_class) do
+        Class.new do
+          include FilterModel
 
-        filter_model :article
-        filters :date, :title, author: [:first_name, :last_name]
-        like author: :circumfix
-        like title: :suffix
-        like author: { first_name: :circumfix }
+          filter_key_prefix = :__
+          filter_model :article
+          filters :title
 
-        attr_accessor :filters
+          attr_accessor :filters
 
-        def initialize(filters:, model:)
-          @filters = filters
-          @model = model
+          def initialize(filters:, model:)
+            @filters = filters
+            @model = model
+          end
+        end
+      end
+
+      let(:filters) do
+        {
+          title: article_titles[1],
+        }
+      end
+
+      it 'returns the simple filtered item' do
+        test = dummy_class.new(filters: filters, model: Article)
+        expect(test.results).to contain_exactly(article_1_auth_1)
+      end
+    end
+
+    context 'filter single layer relation' do
+      let(:dummy_class) do
+        Class.new do
+          include FilterModel
+
+          filter_key_prefix = :__
+          filter_model :article
+          filters :date, :title, author: [:first_name, :last_name]
+          # like title: :suffix
+          # like author: { first_name: :circumfix }
+
+          attr_accessor :filters
+
+          def initialize(filters:, model:)
+            @filters = filters
+            @model = model
+          end
+        end
+      end
+
+      let(:filters) do
+        {
+          title: article_titles[1],
+          author: {
+            first_name: author_1_first_name
+          }
+        }
+      end
+
+      it 'returns the filtered item' do
+        test = dummy_class.new(filters: filters, model: Article)
+        aggregate_failures do
+          expect(test.results).to include(article_1_auth_1)
+          expect(test.results).not_to include(article_2_auth_1, article_3_auth_2)
         end
       end
     end
 
-    let(:filters) do
-      {
-        title: article_titles[1],
-        author: {
-          first_name: author_1_first_name
-        }
-      }
-    end
+    context 'filter simple circumfix partial match with like keyword' do
+      let(:dummy_class) do
+        Class.new do
+          include FilterModel
 
-    it 'returns the simple filtered item' do
-      test = FilterModelTest.new(filters: filters, model: Article)
-      expect(test.results).to contain_exactly(article_1)
+          filter_model :article
+          like title: :circumfix
+          filters :title
+
+          attr_accessor :filters
+
+          def initialize(filters:, model:)
+            @filters = filters
+            @model = model
+          end
+        end
+      end
+
+      let(:article_1_title) { 'ticle 1' }
+      let(:author_1_first_name) { 'teev' }
+
+      let(:filters) do
+        {
+          title: article_1_title,
+        }
+      end
+
+      it 'returns the filtered item' do
+        test = dummy_class.new(filters: filters, model: Article)
+        aggregate_failures do
+          expect(test.results).to include(article_1_auth_1)
+          expect(test.results).not_to include(article_2_auth_1, article_3_auth_2)
+        end
+      end
     end
   end
 end

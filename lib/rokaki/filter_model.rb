@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Rokaki
   module FilterModel
     include Filterable
@@ -7,6 +9,7 @@ module Rokaki
 
     module ClassMethods
       include Filterable::ClassMethods
+
       private
 
       def filters(*filter_keys)
@@ -22,44 +25,62 @@ module Rokaki
       end
 
       def _chain_filter(key)
-        @_chain_filters << "@model = @model.where(#{key.to_s}: #{key.to_s}) if #{key.to_s};"
+        filter = "#{filter_key_prefix}#{key}"
+        class_eval "def #{filter_key_prefix}filter_#{key};" \
+                   "#{_chain_filter_type(key)} end;",
+                   __FILE__, __LINE__ - 2
+
+        @_chain_filters << "@model = #{filter_key_prefix}filter_#{key} if #{filter};"
+      end
+
+      def _chain_filter_type(key)
+        filter = "#{filter_key_prefix}#{key}"
+
+        query = ""
+        if @_like_semantics && mode = @_like_semantics[key]
+          query = "@model.where(\"#{key} LIKE :query\", "
+          if mode == :circumfix
+            query += "query: \"%\#{#{filter}}%\")"
+          end
+          if mode == :prefix
+            query += "query: \"%\#{#{filter}}\")"
+          end
+          if mode == :suffix
+            query += "query: \"\#{#{filter}}%\")"
+          end
+        else
+          query = "@model.where(#{filter}: #{key})"
+        end
+        "#{query};"
       end
 
       def _build_deep_chain(keys)
-        name    = @filter_key_prefix.to_s
+        name    = filter_key_prefix.to_s
         count   = keys.size - 1
 
-        joins = ""
-        where = ""
-        out   = ""
+        joins = ''
+        where = ''
+        out   = ''
 
         leaf = keys.pop
 
-        keys.each_with_index do |key, i|
-          if keys.length == 1
-            name  = "#{key}#{filter_key_infix.to_s}#{leaf}"
-            joins = ":#{key}"
+        keys.each_with_index do |key, _i|
+          next unless keys.length == 1
+          name  = "#{filter_key_prefix}#{key}#{filter_key_infix}#{leaf}"
+          joins = ":#{key}"
 
-            where = "{ #{key.to_s.pluralize}: { #{leaf}: #{name} } }"
-          end
+          where = "{ #{key.to_s.pluralize}: { #{leaf}: #{name} } }"
         end
 
-        # keys.each_with_index do |key, i|
-        #   name += key.to_s
-        #   name += filter_key_infix.to_s unless count == i
-
-        #   joins += "{ #{key.to_s}: " unless count == i
-        #   where += "{ #{key.to_s.pluralize}: " unless count == i
-        #   out += " }" unless count == i
-
-        #   joins += key.to_s if count == i
-        #   where += name if count == i
-        # end
 
         joins = joins += out
         where = where += out
 
-        @_chain_filters << "@model = @model.joins(#{joins}).where(#{where}) if #{name};"
+        class_eval "def #{filter_key_prefix.to_s}filter_#{name};"\
+                   "@model.joins(#{joins}).where(#{where}); end;",
+                   __FILE__, __LINE__ - 2
+
+        @_chain_filters << "@model = #{filter_key_prefix}filter_#{name} if #{name};"
       end
 
       def _chain_nested(filters_object)
@@ -76,8 +97,9 @@ module Rokaki
         @model = model
       end
 
-      def like(*args)
-
+      def like(args)
+        raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
+        @_like_semantics = (@_like_semantics || {}).merge(args)
       end
 
       def deep_chain(keys, value)
@@ -102,12 +124,12 @@ module Rokaki
       end
 
       def define_results
-        results_def = "def results;"
+        results_def = 'def results;'
         @_chain_filters.each do |item|
           results_def += item
         end
         results_def += '@model;end;'
-        class_eval results_def
+        class_eval results_def, __FILE__, __LINE__
       end
     end
   end

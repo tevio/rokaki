@@ -16,7 +16,7 @@ module Rokaki
         end
       end
 
-      def filter_key_prefix(prefix)
+      def filter_key_prefix(prefix = nil)
         @filter_key_prefix ||= prefix
       end
 

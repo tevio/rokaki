@@ -47,9 +47,10 @@ This maps attributes `date`, `author_first_name` and `author_last_name` to a fil
 You can specify a `filter_key_prefix` and a `filter_key_infix` to change the structure of the accessors.
 
 `filter_key_prefix :__` would result in key accessors like `__author_first_name`
+
 `filter_key_infix :__` would result in key accessors like `author__first_name`
 
-### ActiveRecord
+## ActiveRecord
 Include `Rokaki::FilterModel` in any ActiveRecord model (only AR >= 6.0.0 tested so far) you can generate the filter keys and the actual filter lookup code using the `filters` keyword on a model like so:-
 
 ```
@@ -80,7 +81,32 @@ filter = ArticleFilter.new(filters: params[:filters])
 
 filtered_results = filter.results
 
-* note: This will currently return full text matches (I hope to add partial matching with like and ilike soon)
+```
+
+### Partial matching
+You can use `like` to perform a partial match on a specific key, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`.
+
+
+```
+class ArticleFilter
+  include FilterModel
+
+  filters :date, :title, author: [:first_name, :last_name]
+  like title: :circumfix
+
+  attr_accessor :filters
+
+  def initialize(filters:, model: Article)
+    @filters = filters
+    @model = model
+  end
+end
+```
+
+Would produce a query with a LIKE which circumfixes '%' around the filter term, like:-
+
+```
+@model = @model.where('title LIKE :query', query: "%#{title}%")
 ```
 
 
