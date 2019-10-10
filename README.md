@@ -1,4 +1,5 @@
 # Rokaki
+[![Gem Version](https://badge.fury.io/rb/rokaki.svg)](https://badge.fury.io/rb/rokaki)
 
 This gem was born out of a desire to dry up filtering services in Rails or any ruby app that uses the concept of `filters`.
 
