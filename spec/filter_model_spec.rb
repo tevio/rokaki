@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'sqlite3'
 require 'active_record'
 
@@ -136,7 +138,7 @@ module Rokaki
 
       let(:filters) do
         {
-          title: article_titles[1],
+          title: article_titles[1]
         }
       end
 
@@ -153,9 +155,7 @@ module Rokaki
 
           filter_key_prefix = :__
           filter_model :article
-          filters :date, :title, author: [:first_name, :last_name]
-          # like title: :suffix
-          # like author: { first_name: :circumfix }
+          filters :date, :title, author: %i[first_name last_name]
 
           attr_accessor :filters
 
@@ -168,10 +168,44 @@ module Rokaki
 
       let(:filters) do
         {
-          title: article_titles[1],
           author: {
             first_name: author_1_first_name
           }
+        }
+      end
+
+      it 'returns the filtered item' do
+        test = dummy_class.new(filters: filters, model: Article)
+        aggregate_failures do
+          expect(test.results).to include(article_1_auth_1, article_2_auth_1)
+          expect(test.results).not_to include(article_3_auth_2)
+        end
+      end
+    end
+
+    context 'filter simple circumfix partial match with like keyword' do
+      let(:dummy_class) do
+        Class.new do
+          include FilterModel
+
+          # filter_model :article
+          # like title: :circumfix
+          filter :article, like: { title: :circumfix }
+
+          attr_accessor :filters
+
+          def initialize(filters:, model:)
+            @filters = filters
+            @model = model
+          end
+        end
+      end
+
+      let(:article_1_title) { 'ticle 1' }
+
+      let(:filters) do
+        {
+          title: article_1_title
         }
       end
 
@@ -184,38 +218,128 @@ module Rokaki
       end
     end
 
-    context 'filter simple circumfix partial match with like keyword' do
-      let(:dummy_class) do
-        Class.new do
-          include FilterModel
+    context 'filter complex circumfix partial match with like keyword' do
+      context 'using the porcelain syntax' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
 
-          filter_model :article
-          like title: :circumfix
-          filters :title
+            like author: {
+                  first_name: :circumfix,
+                  last_name: :circumfix
+                }
+            filters :title, :created_at, author: [:first_name, :last_name]
+            filter_model :article
 
-          attr_accessor :filters
+            attr_accessor :filters
 
-          def initialize(filters:, model:)
-            @filters = filters
-            @model = model
+            def initialize(filters:)
+              @filters = filters
+            end
+          end
+        end
+
+        context 'when only the author first name filter is passed' do
+          let(:author_1_first_name) { 'teev' }
+
+          let(:filters) do
+            {
+              author: {
+                first_name: author_1_first_name
+              }
+            }
+          end
+
+          it 'returns the filtered item' do
+            test = dummy_class.new(filters: filters)
+            aggregate_failures do
+              expect(test.results).to include(article_1_auth_1)
+              expect(test.results).not_to include(article_3_auth_2)
+            end
+          end
+        end
+
+        context 'when the author first name and a non matching title are passed' do
+          let(:author_1_first_name) { 'teev' }
+
+          let(:filters) do
+            {
+              author: {
+                first_name: author_1_first_name
+              },
+              title: article_titles[3]
+            }
+          end
+
+          it 'returns no results' do
+            test = dummy_class.new(filters: filters)
+            aggregate_failures do
+              expect(test.results).to be_empty
+            end
           end
         end
       end
 
-      let(:article_1_title) { 'ticle 1' }
-      let(:author_1_first_name) { 'teev' }
+      context 'using the "filter" keyword syntax' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
 
-      let(:filters) do
-        {
-          title: article_1_title,
-        }
-      end
+            filter :article,
+              like: {
+              author: {
+                first_name: :circumfix,
+                last_name: :circumfix
+              }
+            },
+            match: %i[title created_at]
 
-      it 'returns the filtered item' do
-        test = dummy_class.new(filters: filters, model: Article)
-        aggregate_failures do
-          expect(test.results).to include(article_1_auth_1)
-          expect(test.results).not_to include(article_2_auth_1, article_3_auth_2)
+            attr_accessor :filters
+
+            def initialize(filters:)
+              @filters = filters
+            end
+          end
+        end
+
+        context 'when only the author first name filter is passed' do
+          let(:author_1_first_name) { 'teev' }
+
+          let(:filters) do
+            {
+              author: {
+                first_name: author_1_first_name
+              }
+            }
+          end
+
+          it 'returns the filtered item' do
+            test = dummy_class.new(filters: filters)
+            aggregate_failures do
+              expect(test.results).to include(article_1_auth_1)
+              expect(test.results).not_to include(article_3_auth_2)
+            end
+          end
+        end
+
+        context 'when the author first name and a non matching title are passed' do
+          let(:author_1_first_name) { 'teev' }
+
+          let(:filters) do
+            {
+              author: {
+                first_name: author_1_first_name
+              },
+              title: article_titles[3]
+            }
+          end
+
+          it 'returns no results' do
+            test = dummy_class.new(filters: filters)
+            aggregate_failures do
+              expect(test.results).to be_empty
+            end
+          end
         end
       end
     end

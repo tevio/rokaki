@@ -26,14 +26,11 @@ module Rokaki
 
       def _build_filter(keys)
         name    = @filter_key_prefix.to_s
-        filters = "filters"
         count   = keys.size - 1
 
         keys.each_with_index do |key, i|
           name += key.to_s
           name += filter_key_infix.to_s unless count == i
-
-          filters += "[:#{key}]"
         end
 
         class_eval "def #{name}; filters.dig(*#{keys}); end;", __FILE__, __LINE__
@@ -52,6 +49,7 @@ module Rokaki
             deep_map(_keys, value[key])
           end
         end
+
 
         if value.is_a? Array
           value.each do |av|

@@ -30,6 +30,7 @@ A simple example might be:-
       @filters = filters
       @articles = Article
     end
+
     attr_accessor :filters
 
     define_filter_keys :date, author: [:first_name, :last_name]
@@ -84,7 +85,35 @@ filtered_results = filter.results
 ```
 
 ### Partial matching
-You can use `like` to perform a partial match on a specific key, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`.
+You can use `like` to perform a partial match on a specific key, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
+
+#### 1. The `filter` command syntax
+
+
+```
+class ArticleFilter
+  include FilterModel
+
+  filter :article,
+    like: {
+      author: {
+        first_name: :circumfix,
+        last_name: :circumfix
+      }
+    },
+
+  attr_accessor :filters
+
+  def initialize(filters:)
+    @filters = filters
+  end
+end
+```
+Or
+
+#### 2. The porcelain command syntax
+
+In this syntax you will need to provide three keywords:- `filters`, `like` and `filter_model` if you are not passing in the model type and assigning it to `@model`
 
 
 ```
@@ -99,6 +128,24 @@ class ArticleFilter
   def initialize(filters:, model: Article)
     @filters = filters
     @model = model
+  end
+end
+```
+
+Or without the model in the initializer
+
+```
+class ArticleFilter
+  include FilterModel
+
+  filters :date, :title, author: [:first_name, :last_name]
+  like title: :circumfix
+  filter_model :article
+
+  attr_accessor :filters
+
+  def initialize(filters:)
+    @filters = filters
   end
 end
 ```
