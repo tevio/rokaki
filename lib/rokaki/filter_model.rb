@@ -113,39 +113,11 @@ module Rokaki
 
       def like(args)
         raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
-
-        like_keys = {base: []}
-        args.keys.each do |key|
-          map_like_keys(like_keys, args, key)
-        end
-
         @_like_semantics = (@_like_semantics || {}).merge(args)
 
-        base_keys = like_keys.delete(:base)
-        key_results = base_keys << like_keys
+        key_builder = LikeKeys.new(args)
 
-        filters(*key_results)
-      end
-
-      def map_like_keys(key_result, base_object, key)
-        sub_object = base_object[key]
-        if sub_object.is_a? Hash
-          sub_object.keys.each do |sub_key|
-            sub_object_value = sub_object[sub_key]
-            if sub_object_value.is_a? Symbol
-              if key_result[key].is_a? Array
-                key_result[key] << sub_key
-              else
-                key_result[key] = [sub_key]
-              end
-            elsif sub_object_value.is_a? Hash
-              map_like_keys(key_result, sub_object, sub_key)
-            end
-          end
-        elsif sub_object.is_a? Symbol
-          key_result[:base] << key
-        end
-        key_result
+        filters(*key_builder.call)
       end
 
       def deep_chain(keys, value)

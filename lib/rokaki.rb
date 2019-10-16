@@ -3,6 +3,7 @@
 require 'rokaki/version'
 require 'rokaki/filterable'
 require 'rokaki/filter_model'
+require 'rokaki/filter_model/like_keys'
 
 module Rokaki
   class Error < StandardError; end
