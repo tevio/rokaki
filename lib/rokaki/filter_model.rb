@@ -16,6 +16,7 @@ module Rokaki
         filter_model(model)
 
         like(options[:like]) if options[:like]
+        ilike(options[:ilike]) if options[:ilike]
         filters(*options[:match]) if options[:match]
       end
 
@@ -54,14 +55,21 @@ module Rokaki
 
         query = ''
         if @_like_semantics && mode = @_like_semantics[key]
-          query = "@model.where(\"#{key} LIKE :query\", "
-          query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix
-          query += "query: \"%\#{#{filter}}\")" if mode == :prefix
-          query += "query: \"\#{#{filter}}%\")" if mode == :suffix
+          query = like_semantics(type: 'LIKE', query: query, filter: filter, mode: mode, key: key)
+        elsif @i_like_semantics && mode = @i_like_semantics[key]
+          query = like_semantics(type: 'ILIKE', query: query, filter: filter, mode: mode, key: key)
         else
           query = "@model.where(#{filter}: #{key})"
         end
 
+        query
+      end
+
+      def like_semantics(type:, query:, filter:, mode:, key:)
+        query = "@model.where(\"#{key} #{type} :query\", "
+        query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix
+        query += "query: \"%\#{#{filter}}\")" if mode == :prefix
+        query += "query: \"\#{#{filter}}%\")" if mode == :suffix
         query
       end
 
@@ -114,6 +122,15 @@ module Rokaki
       def like(args)
         raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
         @_like_semantics = (@_like_semantics || {}).merge(args)
+
+        key_builder = LikeKeys.new(args)
+
+        filters(*key_builder.call)
+      end
+
+      def ilike(args)
+        raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
+        @i_like_semantics = (@i_like_semantics || {}).merge(args)
 
         key_builder = LikeKeys.new(args)
 

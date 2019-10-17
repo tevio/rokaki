@@ -23,7 +23,7 @@ To use the basic DSL include the `Rokaki::Filterable` module
 
 A simple example might be:-
 
-```
+```ruby
   class FilterArticles
     include Rokaki::Filterable
 
@@ -55,7 +55,7 @@ You can specify a `filter_key_prefix` and a `filter_key_infix` to change the str
 ## ActiveRecord
 Include `Rokaki::FilterModel` in any ActiveRecord model (only AR >= 6.0.0 tested so far) you can generate the filter keys and the actual filter lookup code using the `filters` keyword on a model like so:-
 
-```
+```ruby
 # Given the models
 class Author < ActiveRecord::Base
   has_many :articles, inverse_of: :author
@@ -86,17 +86,17 @@ filtered_results = filter.results
 ```
 
 ### Partial matching
-You can use `like` to perform a partial match on a specific key, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
+You can use `like` (or, if you use postgres, the case insensitive `ilike`) to perform a partial match on a specific key, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
 
 #### 1. The `filter` command syntax
 
 
-```
+```ruby
 class ArticleFilter
   include FilterModel
 
   filter :article,
-    like: {
+    like: { # you can use ilike here instead if you use postgres and want case insensitive results
       author: {
         first_name: :circumfix,
         last_name: :circumfix
@@ -117,12 +117,13 @@ Or
 In this syntax you will need to provide three keywords:- `filters`, `like` and `filter_model` if you are not passing in the model type and assigning it to `@model`
 
 
-```
+```ruby
 class ArticleFilter
   include FilterModel
 
   filters :date, :title, author: [:first_name, :last_name]
   like title: :circumfix
+  # ilike title: :circumfix # case insensitive postgres mode
 
   attr_accessor :filters
 
@@ -135,7 +136,7 @@ end
 
 Or without the model in the initializer
 
-```
+```ruby
 class ArticleFilter
   include FilterModel
 
@@ -153,7 +154,7 @@ end
 
 Would produce a query with a LIKE which circumfixes '%' around the filter term, like:-
 
-```
+```ruby
 @model = @model.where('title LIKE :query', query: "%#{title}%")
 ```
 
