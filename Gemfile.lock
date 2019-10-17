@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rokaki (0.4.1)
+    rokaki (0.5.1)
 
 GEM
   remote: https://rubygems.org/

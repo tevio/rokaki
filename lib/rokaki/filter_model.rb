@@ -52,14 +52,28 @@ module Rokaki
 
       def _chain_filter_type(key)
         filter = "#{filter_key_prefix}#{key}"
+        query  = ''
 
-        query = ''
         if @_like_semantics && mode = @_like_semantics[key]
-          query = like_semantics(type: 'LIKE', query: query, filter: filter, mode: mode, key: key)
+          query = like_semantics(
+            type: 'LIKE',
+            query: query,
+            filter: filter,
+            mode: mode,
+            key: key
+          )
+
         elsif @i_like_semantics && mode = @i_like_semantics[key]
-          query = like_semantics(type: 'ILIKE', query: query, filter: filter, mode: mode, key: key)
+          query = like_semantics(
+            type: 'ILIKE',
+            query: query,
+            filter: filter,
+            mode: mode,
+            key: key
+          )
+
         else
-          query = "@model.where(#{filter}: #{key})"
+          query = "@model.where(#{key}: #{filter})"
         end
 
         query

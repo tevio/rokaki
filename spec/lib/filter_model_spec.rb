@@ -123,7 +123,7 @@ module Rokaki
         Class.new do
           include FilterModel
 
-          filter_key_prefix = :__
+          filter_key_prefix :__
           filter_model :article
           filters :title
 
@@ -153,7 +153,7 @@ module Rokaki
         Class.new do
           include FilterModel
 
-          filter_key_prefix = :__
+          filter_key_prefix :__
           filter_model :article
           filters :date, :title, author: %i[first_name last_name]
 
