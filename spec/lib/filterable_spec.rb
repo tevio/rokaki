@@ -63,12 +63,12 @@ RSpec.describe Rokaki::Filterable do
       }
     end
 
-    subject(:filterable) { ArrayFilterTest.new(filters: filters) }
+    subject(:filterable) { AdvancedFilterTest.new(filters: filters) }
 
     it 'defines the advanced key' do
       aggregate_failures do
-        expect(filterable).to respond_to(:advanced__filter_key_1)
-        expect(filterable).to respond_to(:advanced__filter_key_2)
+        expect(filterable).to respond_to(:advanced__filter_key_1__filter_key_2)
+        expect(filterable).to respond_to(:advanced__filter_key_1__filter_key_3)
       end
     end
   end
