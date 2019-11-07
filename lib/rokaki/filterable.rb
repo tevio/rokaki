@@ -50,7 +50,6 @@ module Rokaki
           end
         end
 
-
         if value.is_a? Array
           value.each do |av|
             _keys = keys.dup << av

@@ -21,62 +21,34 @@ module Rokaki
       end
 
       def filters(*filter_keys)
-        define_filter_keys *filter_keys
+        define_filter_keys(*filter_keys)
 
         @_chain_filters ||= []
         filter_keys.each do |filter_key|
-          _chain_filter([filter_key]) unless filter_key.is_a? Hash
-          _chain_nested(filter_key) if filter_key.is_a? Hash
+
+          # TODO: does the key need casting to an array here?
+          _chain_filter(filter_key) unless filter_key.is_a? Hash
+
+          _chain_nested_filter(filter_key) if filter_key.is_a? Hash
+
         end
 
-        define_results
+        define_results # writes out all the generated filters
       end
 
-      def _chain_filter(keys)
-        first_key = keys.shift
-        filter = "#{filter_key_prefix}#{first_key}"
-        name = first_key
+      def _chain_filter(key)
+        basic_filter = BasicFilter.new(
+          keys: [key],
+          prefix: filter_key_prefix,
+          infix: filter_key_infix,
+          like_semantics: @_like_semantics,
+          i_like_semantics: @i_like_semantics
+        )
+        basic_filter.call
 
-        keys.each do |key|
-          filter += "#{filter_key_infix}#{key}"
-          name += "#{filter_key_infix}#{key}"
-        end
+        class_eval basic_filter.filter_method, __FILE__, __LINE__ - 2
 
-        filter_method = "def #{filter_key_prefix}filter_#{name};" \
-          "#{_chain_filter_type(name)} end;"
-
-        class_eval filter_method, __FILE__, __LINE__ - 2
-
-        @_chain_filters << "@model = #{filter_key_prefix}filter_#{name} if #{filter};"
-      end
-
-      def _chain_filter_type(key)
-        filter = "#{filter_key_prefix}#{key}"
-        query  = ''
-
-        if @_like_semantics && mode = @_like_semantics[key]
-          query = like_semantics(
-            type: 'LIKE',
-            query: query,
-            filter: filter,
-            mode: mode,
-            key: key
-          )
-
-        elsif @i_like_semantics && mode = @i_like_semantics[key]
-          query = like_semantics(
-            type: 'ILIKE',
-            query: query,
-            filter: filter,
-            mode: mode,
-            key: key
-          )
-
-        else
-          query = "@model.where(#{key}: #{filter})"
-        end
-
-        query
+        @_chain_filters << basic_filter.filter_template
       end
 
       def like_semantics(type:, query:, filter:, mode:, key:)
@@ -87,40 +59,22 @@ module Rokaki
         query
       end
 
-      def _build_deep_chain(keys)
-        name    = filter_key_prefix.to_s
-        count   = keys.size - 1
+      def _chain_nested_filter(filters_object)
+        nested_filter = NestedFilter.new(
+          filter_key_object: filters_object,
+          prefix: filter_key_prefix,
+          infix: filter_key_infix,
+          like_semantics: @_like_semantics,
+          i_like_semantics: @i_like_semantics
+        )
+        nested_filter.call
 
-        joins = ''
-        where = ''
-        out   = ''
-
-        leaf = keys.pop
-
-        keys.each_with_index do |key, _i|
-          next unless keys.length == 1
-          name  = "#{filter_key_prefix}#{key}#{filter_key_infix}#{leaf}"
-          joins = ":#{key}"
-
-          where = "{ #{key.to_s.pluralize}: { #{leaf}: #{name} } }"
+        nested_filter.filter_methods.each do |filter_method|
+          class_eval filter_method, __FILE__, __LINE__ - 2
         end
 
-        joins = joins += out
-        where = where += out
-
-        # chain filter here?
-        #
-        filter_method = "def #{filter_key_prefix}filter_#{name};"\
-                   "@model.joins(#{joins}).where(#{where}); end;"
-
-        class_eval filter_method, __FILE__, __LINE__ - 2
-
-        @_chain_filters << "@model = #{filter_key_prefix}filter_#{name} if #{name};"
-      end
-
-      def _chain_nested(filters_object)
-        filters_object.keys.each do |key|
-          deep_chain([key], filters_object[key])
+        nested_filter.filter_templates.each do |filter_template|
+          @_chain_filters << filter_template
         end
       end
 
@@ -138,8 +92,9 @@ module Rokaki
         @_like_semantics = (@_like_semantics || {}).merge(args)
 
         key_builder = LikeKeys.new(args)
+        keys = key_builder.call
 
-        filters(*key_builder.call)
+        filters(*keys)
       end
 
       def ilike(args)
@@ -147,8 +102,9 @@ module Rokaki
         @i_like_semantics = (@i_like_semantics || {}).merge(args)
 
         key_builder = LikeKeys.new(args)
+        keys = key_builder.call
 
-        filters(*key_builder.call)
+        filters(*keys)
       end
 
       def deep_chain(keys, value)
@@ -176,7 +132,7 @@ module Rokaki
       # filter_model method
       #
       def define_results
-        results_def = 'def results;model;'
+        results_def = 'def results; model;'
         @_chain_filters.each do |item|
           results_def += item
         end

@@ -2,6 +2,10 @@
 
 module Rokaki
   module FilterModel
+    # Converts deep hashes into keys
+    # effectively drops the leaf values and make's their
+    # keys the leaves
+    #
     class LikeKeys
       def initialize(args)
         @args = args
