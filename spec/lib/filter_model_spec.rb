@@ -6,10 +6,17 @@ require 'active_record'
 # Use `binding.pry` anywhere in this script for easy debugging
 require 'pry'
 
-# Connect to an in-memory sqlite3 database
+# Connect to a postgres database
+#
+# createdb rokaki
+# createuser rokaki
+#
 ActiveRecord::Base.establish_connection(
-  adapter: 'sqlite3',
-  database: ':memory:'
+  :adapter  => "postgresql",
+  :host     => "localhost",
+  :username => "rokaki",
+  :password => "rokaki",
+  :database => "rokaki"
 )
 
 # Define a minimal database schema
@@ -368,7 +375,8 @@ module Rokaki
                   last_name: :circumfix
                 }
               },
-              match: %i[title created_at]
+              match: %i[title created_at],
+              db: :postgres
 
             attr_accessor :filters
 
@@ -411,7 +419,7 @@ module Rokaki
               }
             end
 
-            xit 'returns the filtered items' do
+            it 'returns the filtered items' do
               test = dummy_class.new(filters: filters)
               aggregate_failures do
                 expect(test.results).to include(article_1_auth_1, article_2_auth_1, article_3_auth_2)
@@ -459,9 +467,8 @@ module Rokaki
 
           attr_accessor :filters, :model
 
-          def initialize(filters:, model:)
+          def initialize(filters:)
             @filters = filters
-            @model = model
           end
         end
       end
@@ -477,7 +484,7 @@ module Rokaki
       end
 
       it 'returns no results' do
-        test = dummy_class.new(filters: filters, model: Author)
+        test = dummy_class.new(filters: filters)
         aggregate_failures do
           expect(test.results).to include(author_1)
           expect(test.results).not_to include(author_2, author_3)

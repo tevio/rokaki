@@ -11,10 +11,12 @@ module Rokaki
           prefix: prefix,
           infix: infix,
           like_semantics: like_semantics,
-          i_like_semantics: i_like_semantics
+          i_like_semantics: i_like_semantics,
+          db: db
         }
       end
 
+      let(:db) { :sqlite }
       let(:keys) { [:a] }
       let(:prefix) { nil }
       let(:infix) { :_ }
@@ -43,25 +45,49 @@ module Rokaki
         end
 
         context 'with LIKE semantics' do
-          let(:expected_filter_method) do
-            "def filter_a;" \
-              "@model.where(\"a LIKE :query\"," \
-              " query: \"%\#{a}\")" \
-            " end;"
+          context 'with sqlite' do
+            let(:expected_filter_method) do
+              "def filter_a;" \
+                "@model.where(\"a LIKE :query\"," \
+                " query: \"%\#{a}\")" \
+                " end;"
+            end
+
+            let(:like_semantics) { {a: :prefix} }
+
+            it 'maps the keys' do
+              filter_generator.call
+              result = filter_generator
+
+              aggregate_failures do
+                expect(result.filter_method).to eq(expected_filter_method)
+                expect(result.filter_template).to eq(expected_filter_template)
+              end
+            end
           end
 
-          let(:like_semantics) { {a: :prefix} }
+          context 'with postgres' do
+            let(:db) { :postgres }
 
-          it 'maps the keys' do
-            filter_generator.call
-            result = filter_generator
+            let(:expected_filter_method) do
+              "def filter_a;@model.where(\"a LIKE ANY (ARRAY[?])\", prepare_terms(a, :prefix)) end;"
+            end
 
-            aggregate_failures do
-              expect(result.filter_method).to eq(expected_filter_method)
-              expect(result.filter_template).to eq(expected_filter_template)
+            let(:like_semantics) { {a: :prefix} }
+
+            it 'maps the keys' do
+              filter_generator.call
+              result = filter_generator
+
+              aggregate_failures do
+                expect(result.filter_method).to eq(expected_filter_method)
+                expect(result.filter_template).to eq(expected_filter_template)
+              end
             end
           end
         end
+
+
       end
     end
   end

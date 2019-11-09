@@ -4,7 +4,7 @@ require 'active_support/inflector'
 module Rokaki
   module FilterModel
     class NestedFilter
-      def initialize(filter_key_object:, prefix:, infix:, like_semantics:, i_like_semantics:)
+      def initialize(filter_key_object:, prefix:, infix:, like_semantics:, i_like_semantics:, db:)
         @filter_key_object = filter_key_object
         @prefix = prefix
         @infix = infix
@@ -12,8 +12,9 @@ module Rokaki
         @i_like_semantics = i_like_semantics
         @filter_methods = []
         @filter_templates = []
+        @db = db
       end
-      attr_reader :filter_key_object, :prefix, :infix, :like_semantics, :i_like_semantics
+      attr_reader :filter_key_object, :prefix, :infix, :like_semantics, :i_like_semantics, :db
       attr_accessor :filter_methods, :filter_templates
 
       def call # _chain_nested_filter
@@ -135,10 +136,16 @@ module Rokaki
       end
 
       def build_like_query(type:, query:, filter:, mode:, key:, leaf:)
-        query = "where(\"#{key}.#{leaf} #{type} :query\", "
-        query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix
-        query += "query: \"%\#{#{filter}}\")" if mode == :prefix
-        query += "query: \"\#{#{filter}}%\")" if mode == :suffix
+        if db == :postgres
+          query = "where(\"#{key}.#{leaf} #{type} ANY (ARRAY[?])\", "
+          query += "prepare_terms(#{filter}, :#{mode}))"
+        else
+          query = "where(\"#{key}.#{leaf} #{type} :query\", "
+          query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix
+          query += "query: \"%\#{#{filter}}\")" if mode == :prefix
+          query += "query: \"\#{#{filter}}%\")" if mode == :suffix
+        end
+
         query
       end
 

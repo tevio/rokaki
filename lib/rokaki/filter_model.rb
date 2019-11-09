@@ -7,6 +7,19 @@ module Rokaki
       base.extend(ClassMethods)
     end
 
+    def prepare_terms(param, mode)
+      if param.is_a? Array
+        return param.map { |term| "%#{term}%" } if mode == :circumfix
+        return param.map { |term| "%#{term}" } if mode == :prefix
+        return param.map { |term| "#{term}%" } if mode == :suffix
+      else
+        return ["%#{param}%"] if mode == :circumfix
+        return ["%#{param}"] if mode == :prefix
+        return ["#{param}%"] if mode == :suffix
+      end
+    end
+
+
     module ClassMethods
       include Filterable::ClassMethods
 
@@ -15,6 +28,7 @@ module Rokaki
       def filter(model, options)
         filter_model(model)
 
+        @_filter_db = options[:db] || :postgres
         like(options[:like]) if options[:like]
         ilike(options[:ilike]) if options[:ilike]
         filters(*options[:match]) if options[:match]
@@ -42,7 +56,8 @@ module Rokaki
           prefix: filter_key_prefix,
           infix: filter_key_infix,
           like_semantics: @_like_semantics,
-          i_like_semantics: @i_like_semantics
+          i_like_semantics: @i_like_semantics,
+          db: @_filter_db
         )
         basic_filter.call
 
@@ -51,21 +66,14 @@ module Rokaki
         @_chain_filters << basic_filter.filter_template
       end
 
-      def like_semantics(type:, query:, filter:, mode:, key:)
-        query = "@model.where(\"#{key} #{type} :query\", "
-        query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix
-        query += "query: \"%\#{#{filter}}\")" if mode == :prefix
-        query += "query: \"\#{#{filter}}%\")" if mode == :suffix
-        query
-      end
-
       def _chain_nested_filter(filters_object)
         nested_filter = NestedFilter.new(
           filter_key_object: filters_object,
           prefix: filter_key_prefix,
           infix: filter_key_infix,
           like_semantics: @_like_semantics,
-          i_like_semantics: @i_like_semantics
+          i_like_semantics: @i_like_semantics,
+          db: @_filter_db
         )
         nested_filter.call
 
@@ -82,9 +90,9 @@ module Rokaki
         @model.reflect_on_association(association).klass.table_name
       end
 
-      def filter_model(model)
-        @model = (model.is_a?(Class) ? model : Object.const_get(model.capitalize))
-        class_eval "def model; @model ||= #{@model}; end;"
+      def filter_model(model_class)
+        @model = (model_class.is_a?(Class) ? model_class : Object.const_get(model_class.capitalize))
+        class_eval "def set_model; @model ||= #{@model}; end;"
       end
 
       def like(args)
@@ -132,7 +140,7 @@ module Rokaki
       # filter_model method
       #
       def define_results
-        results_def = 'def results; model;'
+        results_def = 'def results; @model || set_model;'
         @_chain_filters.each do |item|
           results_def += item
         end

@@ -11,10 +11,12 @@ module Rokaki
           prefix: prefix,
           infix: infix,
           like_semantics: like_semantics,
-          i_like_semantics: i_like_semantics
+          i_like_semantics: i_like_semantics,
+          db: db
         }
       end
 
+      let(:db) { :sqlite }
       let(:filter_key_object) { { a: :a } }
       let(:prefix) { nil }
       let(:infix) { :_ }
@@ -143,26 +145,54 @@ module Rokaki
           end
 
           context 'with custom fixations' do
-            let(:prefix) { :_ }
-            let(:infix) { :__ }
+            context 'with sqlite' do
+              let(:prefix) { :_ }
+              let(:infix) { :__ }
 
-            let(:expected_filter_method) do
-              "def _filter__a__b__c__d;" \
-                "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{_a__b__c__d}%\");" \
+              let(:expected_filter_method) do
+                "def _filter__a__b__c__d;" \
+                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{_a__b__c__d}%\");" \
+                  " end;"
+              end
+
+              let(:expected_filter_template) do
+                "@model = _filter__a__b__c__d if _a__b__c__d;"
+              end
+
+              it 'maps the keys' do
+                filter_generator.call
+                result = filter_generator
+
+                aggregate_failures do
+                  expect(result.filter_methods).to eq([expected_filter_method])
+                  expect(result.filter_templates).to eq([expected_filter_template])
+                end
+              end
+            end
+
+            context 'with postgres' do
+              let(:prefix) { :_ }
+              let(:infix) { :__ }
+              let(:db) { :postgres }
+
+              let(:expected_filter_method) do
+                "def _filter__a__b__c__d;" \
+                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE ANY (ARRAY[?])\", prepare_terms(_a__b__c__d, :circumfix));" \
                 " end;"
-            end
+              end
 
-            let(:expected_filter_template) do
-              "@model = _filter__a__b__c__d if _a__b__c__d;"
-            end
+              let(:expected_filter_template) do
+                "@model = _filter__a__b__c__d if _a__b__c__d;"
+              end
 
-            it 'maps the keys' do
-              filter_generator.call
-              result = filter_generator
+              it 'maps the keys' do
+                filter_generator.call
+                result = filter_generator
 
-              aggregate_failures do
-                expect(result.filter_methods).to eq([expected_filter_method])
-                expect(result.filter_templates).to eq([expected_filter_template])
+                aggregate_failures do
+                  expect(result.filter_methods.first).to eq(expected_filter_method)
+                  expect(result.filter_templates.first).to eq(expected_filter_template)
+                end
               end
             end
           end

@@ -84,9 +84,12 @@ filter = ArticleFilter.new(filters: params[:filters])
 filtered_results = filter.results
 
 ```
+### Arrays of params
+You can also filter collections of fields, simply pass an array of filter values instead of a single value, eg:- `{ date: '10-10-10', author: { first_name: ['Author1', 'Author2'] } }`.
+
 
 ### Partial matching
-You can use `like` (or, if you use postgres, the case insensitive `ilike`) to perform a partial match on a specific key, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
+You can use `like` (or, if you use postgres, the case insensitive `ilike`) to perform a partial match on a specific field, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
 
 #### 1. The `filter` command syntax
 
@@ -156,6 +159,62 @@ Would produce a query with a LIKE which circumfixes '%' around the filter term, 
 
 ```ruby
 @model = @model.where('title LIKE :query', query: "%#{title}%")
+```
+
+### Deep nesting
+You can filter joins both with basic matching and partial matching
+```ruby
+class ArticleFilter
+  include FilterModel
+
+  filter :author,
+    like: {
+      articles: {
+        reviews: {
+          title: :circumfix
+        }
+      },
+    }
+
+  attr_accessor :filters
+
+  def initialize(filters:)
+    @filters = filters
+  end
+end
+```
+
+### Array params
+You can pass array params (and partially match them), to filters (search multiple matches) in databases that support it (postgres) by passing the `db` param to the filter keyword, and passing an array of search terms at runtine
+
+```ruby
+class ArticleFilter
+  filter :article,
+    like: {
+      author: {
+        first_name: :circumfix,
+        last_name: :circumfix
+      }
+    },
+    match: %i[title created_at],
+    db: :postgres
+
+  attr_accessor :filters
+
+  def initialize(filters:)
+    @filters = filters
+  end
+end
+
+filterable = ArticleFilter.new(filters:
+               {
+                 author: {
+                   first_name: ['Match One', 'Match Two']
+                 }
+               }
+             )
+
+filterable.results
 ```
 
 
