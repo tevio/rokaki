@@ -16,12 +16,23 @@ module Rokaki
         end
       end
 
+      def define_filter_map(query_field, *filter_keys)
+        filter_keys.each do |filter_key|
+          _map_filters(query_field, [filter_key]) unless filter_key.is_a? Hash
+          _nested_map query_field, filter_key if filter_key.is_a? Hash
+        end
+      end
+
       def filter_key_prefix(prefix = nil)
         @filter_key_prefix ||= prefix
       end
 
       def filter_key_infix(infix = :_)
         @filter_key_infix ||= infix
+      end
+
+      def filterable_object_name(name = 'filters')
+        @filterable_object_name ||= name
       end
 
       def _build_filter(keys)
@@ -33,12 +44,30 @@ module Rokaki
           name += filter_key_infix.to_s unless count == i
         end
 
-        class_eval "def #{name}; filters.dig(*#{keys}); end;", __FILE__, __LINE__
+        class_eval "def #{name}; #{filterable_object_name}.dig(*#{keys}); end;", __FILE__, __LINE__
+      end
+
+      def _map_filters(query_field, keys)
+        name    = @filter_key_prefix.to_s
+        count   = keys.size - 1
+
+        keys.each_with_index do |key, i|
+          name += key.to_s
+          name += filter_key_infix.to_s unless count == i
+        end
+
+        class_eval "def #{name}; #{filterable_object_name}.dig(:#{query_field}); end;", __FILE__, __LINE__
       end
 
       def _nested_key(filters_object)
         filters_object.keys.each do |key|
-          deep_map([key], filters_object[key])
+          deep_map([key], filters_object[key]) { |keys| _build_filter(keys) }
+        end
+      end
+
+      def _nested_map(query_field, filters_object)
+        filters_object.keys.each do |key|
+          deep_map([key], filters_object[key]) { |keys| _map_filters(query_field, keys) }
         end
       end
 
@@ -46,20 +75,24 @@ module Rokaki
         if value.is_a? Hash
           value.keys.map do |key|
             _keys = keys.dup << key
-            deep_map(_keys, value[key])
+            deep_map(_keys, value[key], &Proc.new)
           end
         end
 
         if value.is_a? Array
           value.each do |av|
+            if av.is_a? Symbol
             _keys = keys.dup << av
-            _build_filter(_keys)
+            yield _keys
+            else
+              deep_map(keys, av, &Proc.new)
+            end
           end
         end
 
         if value.is_a? Symbol
           _keys = keys.dup << value
-          _build_filter(_keys)
+          yield _keys
         end
       end
 

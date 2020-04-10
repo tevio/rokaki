@@ -1,10 +1,9 @@
 # Rokaki
 [![Gem Version](https://badge.fury.io/rb/rokaki.svg)](https://badge.fury.io/rb/rokaki)
 
-This gem was born out of a desire to dry up filtering services in Rails or any ruby app that uses the concept of `filters`.
+This gem was born out of a desire to dry up filtering services in Rails apps or any Ruby app that uses the concept of "filters" or "facets".
 
-It's a simple gem that just provides you with a basic dsl based on the filter params that you might pass through from a web request.
-
+There are two modes of use `Filterable` and `FilterModel` that can be activated through the use of two mixins respectively, `include Rokaki::Filterable` or `include Rokaki::FilterModel`.
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -17,42 +16,118 @@ And then execute:
 
     $ bundle
 
-## Usage
+## `Rokaki::Filterable` - Usage
 
-To use the basic DSL include the `Rokaki::Filterable` module
+To use the DSL first include the `Rokaki::Filterable` module in your [por](http://blog.jayfields.com/2007/10/ruby-poro.html) class.
+
+### `#define_filter_keys`
+#### A Simple Example
 
 A simple example might be:-
 
 ```ruby
-  class FilterArticles
-    include Rokaki::Filterable
+class FilterArticles
+  include Rokaki::Filterable
 
-    def initialize(filters:)
-      @filters = filters
-      @articles = Article
-    end
-
-    attr_accessor :filters
-
-    define_filter_keys :date, author: [:first_name, :last_name]
-
-    def filter_results
-      @articles = @articles.where(date: date) if date
-      @articles = @articles.joins(:author).where(author: { first_name: author_first_name }) if author_first_name
-    end
+  def initialize(filters:)
+    @filters = filters
+    @articles = Article
   end
+
+  attr_accessor :filters
+
+  define_filter_keys :date, author: [:first_name, :last_name]
+
+  def filter_results
+    @articles = @articles.where(date: date) if date
+    @articles = @articles.joins(:author).where(author: { first_name: author_first_name }) if author_first_name
+  end
+end
+
+article_filter = FilterArticles.new(filters: {
+  date: '10-10-10',
+  author: {
+    first_name: 'Steve',
+    last_name: 'Martin'
+  }})
+article_filter.author_first_name == 'Steve'
+article_filter.author_last_name == 'Martin'
+article_filter.date == '10-10-10'
 ```
 
-This maps attributes `date`, `author_first_name` and `author_last_name` to a filters object with the structure `{ date: '10-10-10', author: { first_name: 'Shteeve' } }`.
+In this example Rokaki maps the "flat" attribute "keys" `date`, `author_first_name` and `author_last_name` to a `@filters` object with the expected deep structure `{ date: '10-10-10', author: { first_name: 'Steve' } }`, to make it simple to use them in filter queries.
 
-## Additional options
-You can specify a `filter_key_prefix` and a `filter_key_infix` to change the structure of the accessors.
+#### A More Complex Example
+
+```ruby
+class AdvancedFilterable
+  include Rokaki::Filterable
+
+  def initialize(filters:)
+    @fyltrz = filters
+  end
+  attr_accessor :fyltrz
+
+  filterable_object_name :fyltrz
+  filter_key_infix :__
+  define_filter_keys :basic, advanced: {
+    filter_key_1: [:filter_key_2, { filter_key_3: :deep_node }],
+    filter_key_4: :deep_leaf_array
+  }
+end
+
+
+advanced_filterable = AdvancedFilterable.new(filters: {
+  basic: 'ABC',
+  advanced: {
+    filter_key_1: {
+      filter_key_2: '123',
+      filter_key_3: { deep_node: 'NODE' }
+    },
+    filter_key_4: { deep_leaf_array: [1,2,3,4] }
+  }
+})
+
+advanced_filterable.advanced__filter_key_4__deep_leaf_array == [1,2,3,4]
+advanced_filterable.advanced__filter_key_1__filter_key_3__deep_node == 'NODE'
+```
+### `#define_filter_map`
+
+This method takes a single field in the passed in filters hash and maps it to fields named in the second param, this is useful if you want to search for a single value across many different fields or associated tables simultaneously.
+
+#### A Simple Example
+```ruby
+class FilterMap
+  include Rokaki::Filterable
+
+  def initialize(fylterz:)
+    @fylterz = fylterz
+  end
+  attr_accessor :fylterz
+
+  filterable_object_name :fylterz
+  define_filter_map :query, :mapped_a, association: :field
+end
+
+filter_map = FilterMap.new(fytlerz: { query: 'H2O' })
+
+filter_map.mapped_a == 'H2O'
+filter_map.association_field = 'H2O'
+```
+
+#### Additional `Filterable` options
+You can specify several configuration options, for example a `filter_key_prefix` and a `filter_key_infix` to change the structure of the generated filter accessors.
 
 `filter_key_prefix :__` would result in key accessors like `__author_first_name`
 
 `filter_key_infix :__` would result in key accessors like `author__first_name`
 
-## ActiveRecord
+`filterable_object_name :fylterz` would use an internal filter state object named `@fyltrz` instead of the default `@filters`
+
+
+## `Rokaki::FilterModel` - Usage
+
+### ActiveRecord
 Include `Rokaki::FilterModel` in any ActiveRecord model (only AR >= 6.0.0 tested so far) you can generate the filter keys and the actual filter lookup code using the `filters` keyword on a model like so:-
 
 ```ruby
@@ -67,7 +142,7 @@ end
 
 
 class ArticleFilter
-  include FilterModel
+  include Rokaki::FilterModel
 
   filters :date, :title, author: [:first_name, :last_name]
 
@@ -96,7 +171,7 @@ You can use `like` (or, if you use postgres, the case insensitive `ilike`) to pe
 
 ```ruby
 class ArticleFilter
-  include FilterModel
+  include Rokaki::FilterModel
 
   filter :article,
     like: { # you can use ilike here instead if you use postgres and want case insensitive results
@@ -122,7 +197,7 @@ In this syntax you will need to provide three keywords:- `filters`, `like` and `
 
 ```ruby
 class ArticleFilter
-  include FilterModel
+  include Rokaki::FilterModel
 
   filters :date, :title, author: [:first_name, :last_name]
   like title: :circumfix
@@ -141,7 +216,7 @@ Or without the model in the initializer
 
 ```ruby
 class ArticleFilter
-  include FilterModel
+  include Rokaki::FilterModel
 
   filters :date, :title, author: [:first_name, :last_name]
   like title: :circumfix
@@ -165,7 +240,7 @@ Would produce a query with a LIKE which circumfixes '%' around the filter term, 
 You can filter joins both with basic matching and partial matching
 ```ruby
 class ArticleFilter
-  include FilterModel
+  include Rokaki::FilterModel
 
   filter :author,
     like: {
@@ -189,6 +264,8 @@ You can pass array params (and partially match them), to filters (search multipl
 
 ```ruby
 class ArticleFilter
+  include Rokaki::FilterModel
+
   filter :article,
     like: {
       author: {
