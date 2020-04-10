@@ -1,63 +1,6 @@
 # frozen_string_literal: true
-
-require 'sqlite3'
-require 'active_record'
-
-# Use `binding.pry` anywhere in this script for easy debugging
-require 'pry'
-
-# Connect to a postgres database
-#
-# createdb rokaki
-# createuser rokaki
-#
-ActiveRecord::Base.establish_connection(
-  :adapter  => "postgresql",
-  :host     => "localhost",
-  :username => "rokaki",
-  :password => "rokaki",
-  :database => "rokaki"
-)
-
-# Define a minimal database schema
-ActiveRecord::Schema.define do
-  create_table :authors, force: true do |t|
-    t.string :first_name
-    t.string :last_name
-  end
-
-  create_table :articles, force: true do |t|
-    t.string :title
-    t.string :content
-    t.datetime :published
-    t.belongs_to :author, index: true
-  end
-
-  create_table :reviews, force: true do |t|
-    t.string :title
-    t.string :content
-    t.datetime :published
-    # t.belongs_to :review_author, index: true
-    t.belongs_to :article, index: true
-  end
-end
-
-# Define the models
-class Author < ActiveRecord::Base
-  has_many :articles, inverse_of: :author
-end
-
-class Article < ActiveRecord::Base
-  belongs_to :author, inverse_of: :articles, required: true
-  has_many :reviews, inverse_of: :article
-end
-
-# TODO: write true deep specs with more than one join
-class Review < ActiveRecord::Base
-  belongs_to :article, inverse_of: :reviews, required: true
-  # belongs_to :author, inverse_of: :reviews, required: true
-  # belongs_to :review_author, inverse_of: :reviews, required: true
-end
+require 'spec_helper'
+require 'support/active_record_setup'
 
 module Rokaki
   RSpec.describe FilterModel do
@@ -485,6 +428,42 @@ module Rokaki
 
       it 'returns no results' do
         test = dummy_class.new(filters: filters)
+        aggregate_failures do
+          expect(test.results).to include(author_1)
+          expect(test.results).not_to include(author_2, author_3)
+        end
+      end
+    end
+
+    context '#filter_map deep complex circumfix partial map the query field to all specified fields in like key' do
+      let(:dummy_class) do
+        Class.new do
+          include FilterModel
+
+          filter_map :author, :query,
+            like: {
+              articles: {
+                reviews: {
+                  title: :circumfix
+                }
+              },
+            }
+
+          attr_accessor :filters, :model
+
+          def initialize(filters:)
+            @filters = filters
+          end
+        end
+      end
+
+      let(:filters) do
+        { query: 'eview ' }
+      end
+
+      it 'returns no results' do
+        test = dummy_class.new(filters: filters)
+
         aggregate_failures do
           expect(test.results).to include(author_1)
           expect(test.results).not_to include(author_2, author_3)

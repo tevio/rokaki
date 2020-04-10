@@ -25,6 +25,16 @@ module Rokaki
 
       private
 
+      def filter_map(model, query_key, options)
+        filter_model(model)
+        @_query_key = query_key
+
+        @_filter_db = options[:db] || :postgres
+        like(options[:like]) if options[:like]
+        ilike(options[:ilike]) if options[:ilike]
+        filters(*options[:match]) if options[:match]
+      end
+
       def filter(model, options)
         filter_model(model)
 
@@ -35,7 +45,11 @@ module Rokaki
       end
 
       def filters(*filter_keys)
-        define_filter_keys(*filter_keys)
+        if @_query_key
+          define_filter_map(@_query_key, *filter_keys)
+        else
+          define_filter_keys(*filter_keys)
+        end
 
         @_chain_filters ||= []
         filter_keys.each do |filter_key|
