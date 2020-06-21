@@ -8,6 +8,12 @@ There are two modes of use `Filterable` and `FilterModel` that can be activated 
 
 Add this line to your application's Gemfile:
 
+You can install from Rubygems:
+```
+gem 'rokaki'
+```
+Or from github
+
 ```ruby
 gem 'rokaki', git: 'https://github.com/tevio/rokaki.git'
 ```
