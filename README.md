@@ -190,7 +190,38 @@ end
 ```
 Or
 
-#### 2. The porcelain command syntax
+#### 2. The 'filter_map' command syntax
+`filter_map` takes the model name, then a single 'query' field and maps it to fields named in the options, this is useful if you want to search for a single value across many different fields or associated tables simultaneously. (builds on `define_filter_map`)
+
+
+```ruby
+class AuthorFilter
+  include Rokaki::FilterModel
+
+  filter_map :author, :query,
+    like: {
+      articles: {
+        title: :circumfix,
+        reviews: {
+          title: :circumfix
+        }
+      },
+    }
+
+  attr_accessor :filters, :model
+
+  def initialize(filters:)
+    @filters = filters
+  end
+end
+
+filters = { query: "Jiddu" }
+filtered_authors = AuthorFilter.new(filters: filters).results
+```
+
+In the above example we search for authors who have written articles containing the word "Jiddu" in the title that also have reviews containing the sames word in their titles.
+
+#### 3. The porcelain command syntax
 
 In this syntax you will need to provide three keywords:- `filters`, `like` and `filter_model` if you are not passing in the model type and assigning it to `@model`
 
