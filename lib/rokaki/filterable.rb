@@ -23,6 +23,10 @@ module Rokaki
         end
       end
 
+      def define_query_key(key = nil)
+        @filter_map_query_key = key
+      end
+
       def filter_key_prefix(prefix = nil)
         @filter_key_prefix ||= prefix
       end

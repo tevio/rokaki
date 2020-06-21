@@ -23,8 +23,8 @@ module Rokaki
 
     let(:article_contents) do
       ['Article Contents 0',
-       'Contents of the first article',
-       'The second articles contents',
+       'Contents of the First Article',
+       'The second articles contents not the First Article',
        'The article of thirdness',
        'Article Contents 4']
     end
@@ -104,13 +104,48 @@ module Rokaki
       Review.create(title: review_titles[2], article: article_2_auth_2)
     end
 
-    context 'filter the specified field "query" by all specified fields in like key' do
-      let(:dummy_class) do
-        Class.new do
-          include FilterModel
+    context 'using porcelain syntax' do
+      context 'with define_query_key and like' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
 
-          filter_map :author, :query,
-            like: {
+            filter_key_prefix :__
+            filter_model :article
+
+            define_query_key :query # must be decalred before the filter ('like' n this case)
+            like title: :circumfix, content: :circumfix
+
+            attr_accessor :filters
+
+            def initialize(filters:, model:)
+              @filters = filters
+              @model = model
+            end
+          end
+        end
+
+        let(:filters) do
+          {
+            query: 'First'
+          }
+        end
+
+        it 'returns the simple filtered item' do
+          test = dummy_class.new(filters: filters, model: Article)
+          expect(test.results).to contain_exactly(article_1_auth_1)
+        end
+      end
+    end
+
+    context 'using filter_map command' do
+      context 'filter the specified field "query" by all specified fields in like key' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
+
+            filter_map :author, :query,
+              like: {
               articles: {
                 title: :circumfix,
                 reviews: {
@@ -120,35 +155,35 @@ module Rokaki
             },
             mode: :or
 
-          attr_accessor :filters
+            attr_accessor :filters
 
-          def initialize(filters:)
-            @filters = filters
+            def initialize(filters:)
+              @filters = filters
+            end
+          end
+        end
+
+        let(:filters) do
+          { query: 'eview ' }
+        end
+
+        it 'returns all authors who have an article with a review that contain the same words in the title' do
+          test = dummy_class.new(filters: filters)
+
+          aggregate_failures do
+            expect(test.results).to include(author_1, author_2)
+            expect(test.results).not_to include(author_3)
           end
         end
       end
 
-      let(:filters) do
-        { query: 'eview ' }
-      end
+      context 'filter the specified field "query" by all specified fields in LIKE key' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
 
-      it 'returns all authors who have an article with a review that contain the same words in the title' do
-        test = dummy_class.new(filters: filters)
-
-        aggregate_failures do
-          expect(test.results).to include(author_1, author_2)
-          expect(test.results).not_to include(author_3)
-        end
-      end
-    end
-
-    context 'filter the specified field "query" by all specified fields in LIKE key' do
-      let(:dummy_class) do
-        Class.new do
-          include FilterModel
-
-          filter_map :author, :query,
-            like: {
+            filter_map :author, :query,
+              like: {
               articles: {
                 title: :suffix,
                 reviews: {
@@ -158,35 +193,35 @@ module Rokaki
             },
             mode: :or
 
-          attr_accessor :filters
+            attr_accessor :filters
 
-          def initialize(filters:)
-            @filters = filters
+            def initialize(filters:)
+              @filters = filters
+            end
+          end
+        end
+
+        let(:filters) do
+          { query: 'The' }
+        end
+
+        it 'returns both authors who have an article with a review that start with same words in the title' do
+          test = dummy_class.new(filters: filters)
+
+          aggregate_failures do
+            expect(test.results).to include(author_1)
+            expect(test.results).not_to include(author_3, author_2)
           end
         end
       end
 
-      let(:filters) do
-        { query: 'The' }
-      end
+      context 'filter the specified field "query" by all specified fields in ILIKE key' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
 
-      it 'returns both authors who have an article with a review that start with same words in the title' do
-        test = dummy_class.new(filters: filters)
-
-        aggregate_failures do
-          expect(test.results).to include(author_1)
-          expect(test.results).not_to include(author_3, author_2)
-        end
-      end
-    end
-
-    context 'filter the specified field "query" by all specified fields in ILIKE key' do
-      let(:dummy_class) do
-        Class.new do
-          include FilterModel
-
-          filter_map :author, :query,
-            ilike: {
+            filter_map :author, :query,
+              ilike: {
               articles: {
                 title: :suffix,
                 reviews: {
@@ -196,24 +231,25 @@ module Rokaki
             },
             mode: :or
 
-          attr_accessor :filters
+            attr_accessor :filters
 
-          def initialize(filters:)
-            @filters = filters
+            def initialize(filters:)
+              @filters = filters
+            end
           end
         end
-      end
 
-      let(:filters) do
-        { query: 'tHe' }
-      end
+        let(:filters) do
+          { query: 'tHe' }
+        end
 
-      it 'returns both authors who have an article with a review that start with same words in the title' do
-        test = dummy_class.new(filters: filters)
+        it 'returns both authors who have an article with a review that start with same words in the title' do
+          test = dummy_class.new(filters: filters)
 
-        aggregate_failures do
-          expect(test.results).to include(author_1)
-          expect(test.results).not_to include(author_3, author_2)
+          aggregate_failures do
+            expect(test.results).to include(author_1)
+            expect(test.results).not_to include(author_3, author_2)
+          end
         end
       end
     end

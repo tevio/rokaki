@@ -27,7 +27,7 @@ module Rokaki
 
       def filter_map(model, query_key, options)
         filter_model(model)
-        @_query_key = query_key
+        @filter_map_query_key = query_key
 
         @_filter_db = options[:db] || :postgres
         like(options[:like]) if options[:like]
@@ -37,6 +37,7 @@ module Rokaki
 
       def filter(model, options)
         filter_model(model)
+        @filter_map_query_key = nil
 
         @_filter_db = options[:db] || :postgres
         like(options[:like]) if options[:like]
@@ -45,8 +46,8 @@ module Rokaki
       end
 
       def filters(*filter_keys)
-        if @_query_key
-          define_filter_map(@_query_key, *filter_keys)
+        if @filter_map_query_key
+          define_filter_map(@filter_map_query_key, *filter_keys)
         else
           define_filter_keys(*filter_keys)
         end
@@ -100,9 +101,9 @@ module Rokaki
         end
       end
 
-      def associated_table(association)
-        @model.reflect_on_association(association).klass.table_name
-      end
+      # def associated_table(association)
+      #   @model.reflect_on_association(association).klass.table_name
+      # end
 
       def filter_model(model_class)
         @model = (model_class.is_a?(Class) ? model_class : Object.const_get(model_class.capitalize))
