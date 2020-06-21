@@ -56,7 +56,7 @@ module Rokaki
       end
 
       def find_i_like_key(keys)
-        return nil unless like_semantics && i_like_semantics.keys.any?
+        return nil unless i_like_semantics && i_like_semantics.keys.any?
         current_like_key = i_like_semantics
         keys.each do |key|
           current_like_key = current_like_key[key]

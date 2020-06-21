@@ -48,18 +48,6 @@ module Rokaki
       ]
     end
 
-    # let(:review_1_title) do
-    #   'Review 1'
-    # end
-
-    # let(:review_2_title) do
-    #   'Article Review 2'
-    # end
-
-    # let(:review_3_title) do
-    #   'Some Review 3'
-    # end
-
     let!(:author_1) do
       Author.create!(
         first_name: author_1_first_name,
@@ -154,7 +142,7 @@ module Rokaki
       end
     end
 
-    context 'filter the specified field "query" by all specified fields in like key' do
+    context 'filter the specified field "query" by all specified fields in LIKE key' do
       let(:dummy_class) do
         Class.new do
           include FilterModel
@@ -180,6 +168,44 @@ module Rokaki
 
       let(:filters) do
         { query: 'The' }
+      end
+
+      it 'returns both authors who have an article with a review that start with same words in the title' do
+        test = dummy_class.new(filters: filters)
+
+        aggregate_failures do
+          expect(test.results).to include(author_1)
+          expect(test.results).not_to include(author_3, author_2)
+        end
+      end
+    end
+
+    context 'filter the specified field "query" by all specified fields in ILIKE key' do
+      let(:dummy_class) do
+        Class.new do
+          include FilterModel
+
+          filter_map :author, :query,
+            ilike: {
+              articles: {
+                title: :suffix,
+                reviews: {
+                  title: :suffix
+                }
+              },
+            },
+            mode: :or
+
+          attr_accessor :filters
+
+          def initialize(filters:)
+            @filters = filters
+          end
+        end
+      end
+
+      let(:filters) do
+        { query: 'tHe' }
       end
 
       it 'returns both authors who have an article with a review that start with same words in the title' do
