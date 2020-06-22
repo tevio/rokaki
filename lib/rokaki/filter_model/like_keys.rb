@@ -16,15 +16,16 @@ module Rokaki
 
       def call
         args.keys.each do |key|
-          like_keys << map_keys(args[key], key)
+          map_keys(args[key], key)
         end
         like_keys
       end
 
       private
 
-      def map_keys(value, key)
+      def map_keys(value, key, key_path = [])
         key_result = {}
+        key_path << key
 
         if value.is_a? Hash
         value.keys.each do |sub_key|
@@ -35,17 +36,25 @@ module Rokaki
               key_result[key] << sub_key
             else
               key_result[key] = [ sub_key ]
+              @like_keys << deep_assign(key_path, key_result[key])
             end
 
           elsif sub_value.is_a? Hash
-            key_result[key] = map_keys(sub_value, sub_key)
+            map_keys(sub_value, sub_key, key_path)
           end
         end
         else
-          key_result = key
+          @like_keys = [key]
         end
 
         key_result
+      end
+
+      # Many thanks Cary Swoveland
+      # https://stackoverflow.com/questions/56634950/ruby-dig-set-assign-values-using-hashdig/56635124
+      #
+      def deep_assign(keys, value)
+        keys[0..-2].reverse_each.reduce ({ keys.last => value }) { |h,key| { key=>h } }
       end
     end
   end

@@ -28,7 +28,10 @@ module Rokaki
         let(:key_params) do
           {
             duration: {
+              duration_title: :circumfix,
               weekly: {
+                weekly_title: :circumfix,
+                weekly_digest: :suffix,
                 article: {
                   author: {
                     name: :infix,
@@ -48,20 +51,24 @@ module Rokaki
 
         let(:expected_keys) {
           [
-          {
-            duration: {
-              weekly: {
-                article: {
-                  author: [:name, :location]
+            { duration: [:duration_title] },
+            { duration: { weekly: [:weekly_title, :weekly_digest] } },
+            {
+              duration:
+              {
+                weekly: {
+                  article: {
+                    author: [:name, :location]
+                  }
                 }
               }
+
+            },
+            {
+              book: {
+                author: [:name, :location]
+              }
             }
-          },
-          {
-            book: {
-              author: [:name, :location]
-            }
-          }
           ]
         }
 

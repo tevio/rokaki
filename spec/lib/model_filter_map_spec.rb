@@ -118,9 +118,8 @@ module Rokaki
 
             attr_accessor :filters
 
-            def initialize(filters:, model:)
+            def initialize(filters:)
               @filters = filters
-              @model = model
             end
           end
         end
@@ -132,14 +131,14 @@ module Rokaki
         end
 
         it 'returns the simple filtered item' do
-          test = dummy_class.new(filters: filters, model: Article)
-          expect(test.results).to contain_exactly(article_1_auth_1)
+          test = dummy_class.new(filters: filters)
+          expect(test.results).to contain_exactly(article_1_auth_1, article_2_auth_2)
         end
       end
     end
 
     context 'using filter_map command' do
-      context 'filter the specified field "query" by all specified fields in like key' do
+      context 'filter the specified field "query" by ALL specified fields in like key' do
         let(:dummy_class) do
           Class.new do
             include FilterModel
@@ -171,7 +170,7 @@ module Rokaki
           test = dummy_class.new(filters: filters)
 
           aggregate_failures do
-            expect(test.results).to include(author_1, author_2)
+            expect(test.results).to include(author_2)
             expect(test.results).not_to include(author_3)
           end
         end
@@ -205,7 +204,7 @@ module Rokaki
           { query: 'The' }
         end
 
-        it 'returns both authors who have an article with a review that start with same words in the title' do
+        it 'returns authors who have an article with a review that start with same words in the title' do
           test = dummy_class.new(filters: filters)
 
           aggregate_failures do
