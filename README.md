@@ -1,4 +1,6 @@
 # Rokaki
+## You know, for air.
+
 [![Gem Version](https://badge.fury.io/rb/rokaki.svg)](https://badge.fury.io/rb/rokaki)
 
 This gem was born out of a desire to dry up filtering services in Rails apps or any Ruby app that uses the concept of "filters" or "facets".
@@ -46,7 +48,8 @@ class FilterArticles
 
   def filter_results
     @articles = @articles.where(date: date) if date
-    @articles = @articles.joins(:author).where(author: { first_name: author_first_name }) if author_first_name
+    @articles = @articles.joins(:author).where(authors: { first_name: author_first_name }) if author_first_name
+    @articles = @articles.joins(:author).where(authors: { last_name: author_last_name }) if author_last_name
   end
 end
 
@@ -98,6 +101,7 @@ advanced_filterable.advanced__filter_key_4__deep_leaf_array == [1,2,3,4]
 advanced_filterable.advanced__filter_key_1__filter_key_3__deep_node == 'NODE'
 ```
 ### `#define_filter_map`
+The define_filter_map method is more suited to classic "search", where you might want to search multiple fields on a model or across a graph. See the section on [filter_map](https://github.com/tevio/rokaki#2-the-filter_map-command-syntax) with OR for more on this kind of application.
 
 This method takes a single field in the passed in filters hash and maps it to fields named in the second param, this is useful if you want to search for a single value across many different fields or associated tables simultaneously.
 
@@ -115,7 +119,7 @@ class FilterMap
   define_filter_map :query, :mapped_a, association: :field
 end
 
-filter_map = FilterMap.new(fytlerz: { query: 'H2O' })
+filter_map = FilterMap.new(fylterz: { query: 'H2O' })
 
 filter_map.mapped_a == 'H2O'
 filter_map.association_field = 'H2O'
@@ -256,6 +260,58 @@ end
 filters = { query: "Lao" }
 filtered_authors = AuthorFilter.new(filters: filters).results
 ```
+
+## CAVEATS
+Active record OR over a join may require you to add something like the following in an initializer in order for it to function properly:-
+
+### #structurally_incompatible_values_for_or
+
+``` ruby
+module ActiveRecord
+  module QueryMethods
+    def structurally_incompatible_values_for_or(other)
+      Relation::SINGLE_VALUE_METHODS.reject { |m| send("#{m}_value") == other.send("#{m}_value") } +
+        (Relation::MULTI_VALUE_METHODS - [:joins, :eager_load, :references, :extending]).reject { |m| send("#{m}_values") == other.send("#{m}_values") } +
+        (Relation::CLAUSE_METHODS - [:having, :where]).reject { |m| send("#{m}_clause") == other.send("#{m}_clause") }
+    end
+  end
+end
+```
+
+### A has one relation to a model called Or
+If you happen to have a model/table named 'Or' then you can override the `or:` key syntax by specifying a special `or_key`:-
+
+```ruby
+class AuthorFilter
+  include Rokaki::FilterModel
+
+  or_key :my_or
+  filter_map :author, :query,
+    like: {
+      articles: {
+        title: :circumfix,
+        my_or: { # the or is aware of the join and will generate a compound join aware or query
+          or: { # The Or model has a title field
+            title: :circumfix
+          }
+        }
+      },
+    }
+
+  attr_accessor :filters, :model
+
+  def initialize(filters:)
+    @filters = filters
+  end
+end
+
+filters = { query: "Syntaxes" }
+filtered_authors = AuthorFilter.new(filters: filters).results
+```
+
+
+See [this issue](https://github.com/rails/rails/issues/24055) for details.
+
 
 #### 3. The porcelain command syntax
 

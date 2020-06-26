@@ -12,9 +12,10 @@ module Rokaki
         end
         attr_accessor :fylterz
 
+        or_key :oared # this should not be present in the generated method names
         filterable_object_name :fylterz
         filter_key_prefix :__
-        define_filter_map :query, :mapped_a, association: :field
+        define_filter_map :query, :mapped_a, oared: { association: :field }
       end
 
       subject(:filterable) { FilterMapTest.new(fylterz: filters) }

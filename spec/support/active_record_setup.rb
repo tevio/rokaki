@@ -1,11 +1,27 @@
 require 'pg'
 require 'active_record'
+require 'database_cleaner/active_record'
+
+DatabaseCleaner.strategy = :truncation
+
+RSpec.configure do |config|
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.clean_with(:truncation)
+  end
+
+  config.around(:each) do |example|
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  end
+end
 
 # Connect to a postgres database
-j
+#
 # createdb rokaki
 # createuser rokaki
-#
+
 ActiveRecord::Base.establish_connection(
   :adapter  => "postgresql",
   :host     => "localhost",
@@ -59,4 +75,3 @@ end
 class Review < ActiveRecord::Base
   belongs_to :article, inverse_of: :reviews, required: true
 end
-
