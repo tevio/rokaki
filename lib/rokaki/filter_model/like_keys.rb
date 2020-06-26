@@ -9,45 +9,38 @@ module Rokaki
     class LikeKeys
       def initialize(args)
         @args = args
-        @like_keys = []
+        @keys = []
+        @key_paths = []
       end
 
-      attr_reader :args, :like_keys
+      attr_reader :args, :keys, :key_paths
 
       def call
         args.keys.each do |key|
-          map_keys(args[key], key)
+          map_keys(key: key, value: args[key])
         end
-        like_keys
+        keys
       end
 
       private
 
-      def map_keys(value, key, key_path = [])
-        key_result = {}
-        key_path << key
+      def map_keys(key:, value:, key_path: [])
 
-        if value.is_a? Hash
-        value.keys.each do |sub_key|
-          sub_value = value[sub_key]
-
-          if sub_value.is_a? Symbol
-            if key_result[key].is_a? Array
-              key_result[key] << sub_key
-            else
-              key_result[key] = [ sub_key ]
-              @like_keys << deep_assign(key_path, key_result[key])
-            end
-
-          elsif sub_value.is_a? Hash
-            map_keys(sub_value, sub_key, key_path)
+        if value.is_a?(Hash)
+          key_path << key
+          value.keys.each do |key|
+            map_keys(key: key, value: value[key], key_path: key_path.dup)
           end
         end
-        else
-          @like_keys = [key]
+
+        if value.is_a?(Symbol)
+          keys << (key_path.empty? ? key : deep_assign(key_path, key))
+          key_path << key
+          key_paths << key_path
         end
 
-        key_result
+        key_path
+
       end
 
       # Many thanks Cary Swoveland

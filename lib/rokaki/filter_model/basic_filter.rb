@@ -10,8 +10,9 @@ module Rokaki
         @like_semantics = like_semantics
         @i_like_semantics = i_like_semantics
         @db = db
+        @filter_query = nil
       end
-      attr_reader :keys, :prefix, :infix, :like_semantics, :i_like_semantics, :db
+      attr_reader :keys, :prefix, :infix, :like_semantics, :i_like_semantics, :db, :filter_query
       attr_accessor :filter_method, :filter_template
 
       def call
@@ -56,7 +57,7 @@ module Rokaki
           query = "@model.where(#{key}: #{filter})"
         end
 
-        query
+        @filter_query = query
       end
 
       def build_like_query(type:, query:, filter:, mode:, key:)
