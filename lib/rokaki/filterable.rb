@@ -35,11 +35,16 @@ module Rokaki
         @filter_key_infix ||= infix
       end
 
+      def or_key(or_key = :or)
+        @or_key ||= or_key
+      end
+
       def filterable_object_name(name = 'filters')
         @filterable_object_name ||= name
       end
 
       def _build_filter(keys)
+        keys.delete(or_key)
         name    = @filter_key_prefix.to_s
         count   = keys.size - 1
 
@@ -52,6 +57,7 @@ module Rokaki
       end
 
       def _map_filters(query_field, keys)
+        keys.delete(or_key)
         name    = @filter_key_prefix.to_s
         count   = keys.size - 1
 

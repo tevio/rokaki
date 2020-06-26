@@ -4,7 +4,7 @@ require 'support/active_record_setup'
 
 module Rokaki
   RSpec.describe "FilterModel#filter_map" do
-    let(:author_1_first_name) { 'Shteevie' }
+    let(:author_1_first_name) { 'Shteevine' }
     let(:author_1_last_name) { 'Martini' }
 
     let(:author_2_first_name) { 'Jimi' }
@@ -12,6 +12,9 @@ module Rokaki
 
     let(:author_3_first_name) { 'Alan' }
     let(:author_3_last_name) { 'Partridge' }
+
+    let(:author_4_first_name) { 'Ada' }
+    let(:author_4_last_name) { 'Lovilace' }
 
     let(:article_titles) do
       ['Article 0 Title',
@@ -23,7 +26,7 @@ module Rokaki
 
     let(:article_contents) do
       ['Article Contents 0',
-       'Contents of the First Article',
+       'Contents of the First Article review pending',
        'The second articles contents not the First Article',
        'The article of thirdness',
        'Article Contents 4']
@@ -69,6 +72,13 @@ module Rokaki
       )
     end
 
+    let!(:author_4) do
+      Author.create!(
+        first_name: author_4_first_name,
+        last_name: author_4_last_name
+      )
+    end
+
     let!(:article_1_auth_1) do
       Article.create!(
         title: article_titles[1],
@@ -106,38 +116,127 @@ module Rokaki
 
     context 'using porcelain syntax' do
       context 'with define_query_key and like' do
-        let(:dummy_class) do
-          Class.new do
-            include FilterModel
-
-            filter_key_prefix :__
-            filter_model :article
-
-            define_query_key :query # must be decalred before the filter ('like' n this case)
-            like title: :circumfix, content: :circumfix
-
-            attr_accessor :filters
-
-            def initialize(filters:)
-              @filters = filters
-            end
-          end
-        end
-
         let(:filters) do
           {
             query: 'First'
           }
         end
 
-        it 'returns the simple filtered item' do
-          test = dummy_class.new(filters: filters)
-          expect(test.results).to contain_exactly(article_1_auth_1, article_2_auth_2)
+        context 'with an AND' do
+          let(:dummy_class) do
+            Class.new do
+              include FilterModel
+
+              filter_key_prefix :__
+              filter_model :article
+
+              define_query_key :query # must be decalred before the filter ('like' n this case)
+              like title: :circumfix, content: :circumfix
+
+              attr_accessor :filters
+
+              def initialize(filters:)
+                @filters = filters
+              end
+            end
+          end
+
+
+          it 'returns the simple filtered item' do
+            test = dummy_class.new(filters: filters)
+            expect(test.results).to contain_exactly(article_1_auth_1)
+          end
+        end
+
+        context 'with an OR' do
+          let(:dummy_class) do
+            Class.new do
+              include FilterModel
+
+              filter_key_prefix :__
+              filter_model :article
+
+              define_query_key :query # must be decalred before the filter ('like' n this case)
+              like title: :circumfix, or: { content: :circumfix }
+
+              attr_accessor :filters
+
+              def initialize(filters:)
+                @filters = filters
+              end
+            end
+          end
+
+          it 'returns the simple filtered item' do
+            test = dummy_class.new(filters: filters)
+            expect(test.results).to include(article_1_auth_1, article_2_auth_2)
+            expect(test.results).not_to include(article_3_auth_3)
+          end
         end
       end
     end
 
     context 'using filter_map command' do
+      context 'with a simple query structure' do
+        context 'when using an AND' do
+          let(:dummy_class) do
+            Class.new do
+              include FilterModel
+
+              filter_map :author, :query, like: { first_name: :circumfix, last_name: :circumfix }
+
+              attr_accessor :filters
+
+              def initialize(filters:)
+                @filters = filters
+              end
+            end
+          end
+
+          let(:filters) do
+            { query: 'in' }
+          end
+
+          it 'returns all authors who have a first and last name that share the same string' do
+            test = dummy_class.new(filters: filters)
+
+            aggregate_failures do
+              expect(test.results).to include(author_1)
+              expect(test.results).not_to include(author_2, author_3)
+            end
+          end
+        end
+
+        context 'when using an OR' do
+          let(:dummy_class) do
+            Class.new do
+              include FilterModel
+
+              filter_map :author, :query, like: { first_name: :circumfix, or: { last_name: :circumfix } }
+
+              attr_accessor :filters
+
+              def initialize(filters:)
+                @filters = filters
+              end
+            end
+          end
+
+          let(:filters) do
+            { query: 'vi' }
+          end
+
+          it 'returns all authors who have a first and last name that share the same string' do
+            test = dummy_class.new(filters: filters)
+
+            aggregate_failures do
+              expect(test.results).to include(author_1, author_4)
+              expect(test.results).not_to include(author_2, author_3)
+            end
+          end
+        end
+      end
+
       context 'filter the specified field "query" by ALL specified fields in like key' do
         let(:dummy_class) do
           Class.new do
@@ -151,8 +250,7 @@ module Rokaki
                   title: :circumfix
                 }
               },
-            },
-            mode: :or
+            }
 
             attr_accessor :filters
 
@@ -176,6 +274,47 @@ module Rokaki
         end
       end
 
+      context 'filter the specified field "query" by ANY specified fields in like key' do
+        let(:dummy_class) do
+          Class.new do
+            include FilterModel
+
+            filter_map :author, :query,
+              like: {
+              articles: {
+                title: :circumfix,
+                or: {
+                  reviews: {
+                    title: :circumfix,
+                    content: :circumfix
+                  }
+                },
+                content: :circumfix
+              },
+            }
+
+            attr_accessor :filters
+
+            def initialize(filters:)
+              @filters = filters
+            end
+          end
+        end
+
+        let(:filters) do
+          { query: 'eview ' }
+        end
+
+        it 'returns all authors who have an article with a review that contain the same words in the title' do
+          test = dummy_class.new(filters: filters)
+
+          aggregate_failures do
+            expect(test.results).to include(author_1)
+            expect(test.results).not_to include(author_2)
+          end
+        end
+      end
+
       context 'filter the specified field "query" by all specified fields in LIKE key' do
         let(:dummy_class) do
           Class.new do
@@ -189,8 +328,7 @@ module Rokaki
                   title: :suffix
                 }
               },
-            },
-            mode: :or
+            }
 
             attr_accessor :filters
 
@@ -227,8 +365,7 @@ module Rokaki
                   title: :suffix
                 }
               },
-            },
-            mode: :or
+            }
 
             attr_accessor :filters
 

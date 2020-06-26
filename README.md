@@ -227,6 +227,36 @@ filtered_authors = AuthorFilter.new(filters: filters).results
 
 In the above example we search for authors who have written articles containing the word "Jiddu" in the title that also have reviews containing the sames word in their titles.
 
+The above example performs an "ALL" like query, where all fields must satisfy the query term. Conversly you can use `or` to perform an "ANY", where any of the fields within the `or` will satisfy the query term, like so:-
+
+
+```ruby
+class AuthorFilter
+  include Rokaki::FilterModel
+
+  filter_map :author, :query,
+    like: {
+      articles: {
+        title: :circumfix,
+        or: { # the or is aware of the join and will generate a compound join aware or query
+          reviews: {
+            title: :circumfix
+          }
+        }
+      },
+    }
+
+  attr_accessor :filters, :model
+
+  def initialize(filters:)
+    @filters = filters
+  end
+end
+
+filters = { query: "Lao" }
+filtered_authors = AuthorFilter.new(filters: filters).results
+```
+
 #### 3. The porcelain command syntax
 
 In this syntax you will need to provide three keywords:- `filters`, `like` and `filter_model` if you are not passing in the model type and assigning it to `@model`
