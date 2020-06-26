@@ -66,7 +66,7 @@ module Rokaki
       end
 
       def _build_deep_chain(keys)
-        name    = '' # prefix.to_s
+        name    = ''
         count   = keys.size - 1
 
         joins_before = []

@@ -25,7 +25,7 @@ module Rokaki
           current_key_path = []
           previous_key = nil
 
-          if key_path.is_a?(Symbol)
+          if Symbol === key_path
             if key_paths.length == 1
               @result = key_paths
             else
@@ -33,7 +33,7 @@ module Rokaki
             end
           end
 
-          if key_path.is_a?(Array)
+          if Array === key_path
             key_path.each do |key|
               current_path_length = current_key_path.length
 
@@ -42,9 +42,9 @@ module Rokaki
                 if current_path_length == 1
                   parent_result = result[previous_key]
 
-                  if parent_result.is_a?(Symbol) && parent_result != key
+                  if Symbol === parent_result && parent_result != key
                     result[previous_key] = [parent_result, key]
-                  elsif parent_result.is_a?(Array)
+                  elsif Array === parent_result
 
                     parent_result.each_with_index do |array_item, index|
                       if array_item == key
@@ -63,13 +63,14 @@ module Rokaki
 
                   if previous_path_length == 1
                     res = result.dig(*previous_key_path)
-                    if res.is_a? Symbol
+
+                    if Symbol === res
                       result[previous_key_path.first] = { previous_key => key }
-                    elsif res.is_a?(Hash)
                     end
                   elsif previous_path_length > 1
                     res = result.dig(*previous_key_path)
-                    if res.is_a? Symbol
+
+                    if Symbol === res
                       base = previous_key_path.pop
                       result.dig(*previous_key_path)[base] = { previous_key => key }
                     end

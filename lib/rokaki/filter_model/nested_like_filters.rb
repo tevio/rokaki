@@ -81,7 +81,7 @@ module Rokaki
             base_modes = modes[index]
             key_path_item.each_with_index do |key_path, kp_index|
 
-              build_filter(keys: key_path.dup, join_map: join_map.result, mode: base_modes[kp_index], filter_name: item_filter_names[kp_index], search_mode: item_search_modes[kp_index])
+              build_query(keys: key_path.dup, join_map: join_map.result, mode: base_modes[kp_index], filter_name: item_filter_names[kp_index], search_mode: item_search_modes[kp_index])
             end
 
             item_filter_queries = filter_queries[index]
@@ -102,7 +102,7 @@ module Rokaki
 
             method_name = ([prefix, :filter, base_name]).compact.join(infix.to_s)
 
-            build_filter(keys: key_path_item.dup, join_map: join_map.result, filter_name: filter_name, search_mode: search_modes[index])
+            build_query(keys: key_path_item.dup, join_map: join_map.result, filter_name: filter_name, search_mode: search_modes[index])
 
             @filter_methods << "def #{method_name}; #{filter_queries[index]}; end;"
             @templates << "@model = #{method_name} if #{filter_name};"
@@ -190,7 +190,7 @@ module Rokaki
       end
 
       # DOUBLE SPLAT HASHES TO MAKE ARG LISTS!
-      def build_filter(keys: , join_map:, mode: :and, filter_name:, search_mode:)
+      def build_query(keys: , join_map:, mode: :and, filter_name:, search_mode:)
         leaf = nil
         leaf = keys.pop
 
@@ -212,7 +212,7 @@ module Rokaki
           filter_query = "@model.joins(**#{join_map}).#{query}"
         end
 
-        if mode == :or
+        if mode == or_key
           @filter_queries << [@filter_queries.pop, filter_query].flatten
         else
           @filter_queries << filter_query

@@ -25,6 +25,7 @@ RSpec.configure do |config|
     FactoryBot.find_definitions
   end
 
-  config.filter_run focus: true
+  # focus tests
   config.run_all_when_everything_filtered = true
+  config.filter_run_including :focus => true
 end

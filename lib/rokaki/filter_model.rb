@@ -8,7 +8,7 @@ module Rokaki
     end
 
     def prepare_terms(param, mode)
-      if param.is_a? Array
+      if Array === param
         return param.map { |term| "%#{term}%" } if mode == :circumfix
         return param.map { |term| "%#{term}" } if mode == :prefix
         return param.map { |term| "#{term}%" } if mode == :suffix
@@ -79,7 +79,8 @@ module Rokaki
           prefix: filter_key_prefix,
           infix: filter_key_infix,
           db: @_filter_db,
-          type: term_type
+          type: term_type,
+          or_key: or_key
         )
         nested_like_filter.call
 

@@ -1,4 +1,8 @@
+# frozen_string_literal: true
+
 module Rokaki
+  # include this module for rokaki's filtering dsl in any object
+  #
   module Filterable
     def self.included(base)
       base.extend(ClassMethods)
@@ -11,15 +15,15 @@ module Rokaki
 
       def define_filter_keys(*filter_keys)
         filter_keys.each do |filter_key|
-          _build_filter([filter_key]) unless filter_key.is_a? Hash
-          _nested_key filter_key if filter_key.is_a? Hash
+          _build_filter([filter_key]) unless Hash === filter_key
+          _nested_key filter_key if Hash === filter_key
         end
       end
 
       def define_filter_map(query_field, *filter_keys)
         filter_keys.each do |filter_key|
-          _map_filters(query_field, [filter_key]) unless filter_key.is_a? Hash
-          _nested_map query_field, filter_key if filter_key.is_a? Hash
+          _map_filters(query_field, [filter_key]) unless Hash === filter_key
+          _nested_map query_field, filter_key if Hash === filter_key
         end
       end
 

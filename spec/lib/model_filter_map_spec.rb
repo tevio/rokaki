@@ -127,23 +127,24 @@ module Rokaki
             Class.new do
               include FilterModel
 
+              filterable_object_name :fylterz
               filter_key_prefix :__
               filter_model :article
 
               define_query_key :query # must be decalred before the filter ('like' n this case)
               like title: :circumfix, content: :circumfix
 
-              attr_accessor :filters
+              attr_accessor :fylterz
 
-              def initialize(filters:)
-                @filters = filters
+              def initialize(fylterz:)
+                @fylterz = fylterz
               end
             end
           end
 
 
           it 'returns the simple filtered item' do
-            test = dummy_class.new(filters: filters)
+            test = dummy_class.new(fylterz: filters)
             expect(test.results).to contain_exactly(article_1_auth_1)
           end
         end
@@ -167,7 +168,34 @@ module Rokaki
             end
           end
 
-          it 'returns the simple filtered item' do
+          it 'returns filtered items' do
+            test = dummy_class.new(filters: filters)
+            expect(test.results).to include(article_1_auth_1, article_2_auth_2)
+            expect(test.results).not_to include(article_3_auth_3)
+          end
+        end
+
+        context 'with an OR specified via a custom .or_key' do
+          let(:dummy_class) do
+            Class.new do
+              include FilterModel
+
+              or_key :oared
+              filter_key_prefix :__
+              filter_model :article
+
+              define_query_key :query # must be decalred before the filter ('like' n this case)
+              like title: :circumfix, oared: { content: :circumfix }
+
+              attr_accessor :filters
+
+              def initialize(filters:)
+                @filters = filters
+              end
+            end
+          end
+
+          it 'returns filtered items' do
             test = dummy_class.new(filters: filters)
             expect(test.results).to include(article_1_auth_1, article_2_auth_2)
             expect(test.results).not_to include(article_3_auth_3)
