@@ -3,7 +3,7 @@
 module Rokaki
   module FilterModel
     RSpec.describe LikeKeys do
-      subject(:key_generator) { described_class.new(args) }
+      subject(:key_generator) { described_class.new(**args) }
 
       context 'with a shallow key' do
         let(:args) { { name: :infix } }

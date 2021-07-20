@@ -3,7 +3,7 @@
 module Rokaki
   module FilterModel
     RSpec.describe NestedFilter do
-      subject(:filter_generator) { described_class.new(filter_args) }
+      subject(:filter_generator) { described_class.new(**filter_args) }
 
       let(:filter_args) do
         {
