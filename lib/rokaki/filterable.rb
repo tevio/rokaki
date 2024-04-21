@@ -85,11 +85,11 @@ module Rokaki
         end
       end
 
-      def deep_map(keys, value)
+      def deep_map(keys, value, &block)
         if value.is_a? Hash
           value.keys.map do |key|
             _keys = keys.dup << key
-            deep_map(_keys, value[key], &Proc.new)
+            deep_map(_keys, value[key], &block)
           end
         end
 
@@ -99,7 +99,7 @@ module Rokaki
             _keys = keys.dup << av
             yield _keys
             else
-              deep_map(keys, av, &Proc.new)
+              deep_map(keys, av, &block)
             end
           end
         end
