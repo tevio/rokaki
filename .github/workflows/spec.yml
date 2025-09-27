@@ -3,6 +3,28 @@ on: [push]
 jobs:
   run-rspec-tests:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:9.4
+        env:
+          MYSQL_DATABASE: rokaki
+          MYSQL_USER: rokaki
+          MYSQL_PASSWORD: rokaki
+          MYSQL_ROOT_PASSWORD: rokaki
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: "postgres"
+          POSTGRES_DB: rokaki
+        ports:
+        - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - name: Set up Ruby
