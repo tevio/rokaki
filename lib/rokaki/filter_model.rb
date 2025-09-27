@@ -175,7 +175,8 @@ module Rokaki
         @_filter_db = db
       end
 
-      def filter_model(model_class)
+      def filter_model(model_class, db: nil)
+        @_filter_db = db if db
         @model = (model_class.is_a?(Class) ? model_class : Object.const_get(model_class.capitalize))
         class_eval "def set_model; @model ||= #{@model}; end;"
       end
