@@ -130,9 +130,9 @@ module Rokaki
                 "def filter_a_b_c_d;" \
                   "@model.joins(a: { b: :c }).where(\"cs.d LIKE ANY (ARRAY[?])\", prepare_terms(a_b_c_d, :circumfix));" \
                 " end;"
-              else
+              elsif selected_db == :mysql
                 "def filter_a_b_c_d;" \
-                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{a_b_c_d}%\");" \
+                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY :query\", query: \"%\#{a_b_c_d}%\");" \
                   " end;"
               end
             end
@@ -167,7 +167,7 @@ module Rokaki
                     " end;"
                 when :mysql
                   "def _filter__a__b__c__d;" \
-                    "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY ANY (ARRAY[?])\", prepare_terms(_a__b__c__d, :circumfix));" \
+                    "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY :query\", query: \"%\#{_a__b__c__d}%\");" \
                     " end;"
                 end
               end
