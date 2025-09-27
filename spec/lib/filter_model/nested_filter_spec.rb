@@ -2,7 +2,7 @@
 
 module Rokaki
   module FilterModel
-    RSpec.describe NestedFilter do
+    RSpec.shared_examples "NestedFilter" do |selected_db|
       subject(:filter_generator) { described_class.new(**filter_args) }
 
       let(:filter_args) do
@@ -16,7 +16,7 @@ module Rokaki
         }
       end
 
-      let(:db) { :sqlite }
+      let(:db) { selected_db }
       let(:filter_key_object) { { a: :a } }
       let(:prefix) { nil }
       let(:infix) { :_ }
@@ -145,54 +145,37 @@ module Rokaki
           end
 
           context 'with custom fixations' do
-            context 'with sqlite' do
-              let(:prefix) { :_ }
-              let(:infix) { :__ }
+            let(:prefix) { :_ }
+            let(:infix) { :__ }
 
-              let(:expected_filter_method) do
+            let(:expected_filter_method) do
+              case selected_db
+              when :sqlite
                 "def _filter__a__b__c__d;" \
                   "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{_a__b__c__d}%\");" \
                   " end;"
-              end
-
-              let(:expected_filter_template) do
-                "@model = _filter__a__b__c__d if _a__b__c__d;"
-              end
-
-              it 'maps the keys' do
-                filter_generator.call
-                result = filter_generator
-
-                aggregate_failures do
-                  expect(result.filter_methods).to eq([expected_filter_method])
-                  expect(result.filter_templates).to eq([expected_filter_template])
-                end
-              end
-            end
-
-            context 'with postgres' do
-              let(:prefix) { :_ }
-              let(:infix) { :__ }
-              let(:db) { :postgres }
-
-              let(:expected_filter_method) do
+              when :postgres
                 "def _filter__a__b__c__d;" \
                   "@model.joins(a: { b: :c }).where(\"cs.d LIKE ANY (ARRAY[?])\", prepare_terms(_a__b__c__d, :circumfix));" \
                 " end;"
+              when :mysql
+                "def _filter__a__b__c__d;" \
+                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY ANY (ARRAY[?])\", prepare_terms(_a__b__c__d, :circumfix));" \
+                " end;"
               end
+            end
 
-              let(:expected_filter_template) do
-                "@model = _filter__a__b__c__d if _a__b__c__d;"
-              end
+            let(:expected_filter_template) do
+              "@model = _filter__a__b__c__d if _a__b__c__d;"
+            end
 
-              it 'maps the keys' do
-                filter_generator.call
-                result = filter_generator
+            it 'maps the keys' do
+              filter_generator.call
+              result = filter_generator
 
-                aggregate_failures do
-                  expect(result.filter_methods.first).to eq(expected_filter_method)
-                  expect(result.filter_templates.first).to eq(expected_filter_template)
-                end
+              aggregate_failures do
+                expect(result.filter_methods).to eq([expected_filter_method])
+                expect(result.filter_templates).to eq([expected_filter_template])
               end
             end
           end

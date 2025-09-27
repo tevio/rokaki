@@ -2,7 +2,7 @@
 
 module Rokaki
   module FilterModel
-    RSpec.describe BasicFilter do
+    RSpec.shared_examples "BasicFilter" do |selected_db|
       subject(:filter_generator) { described_class.new(**filter_args) }
 
       let(:filter_args) do
@@ -16,7 +16,7 @@ module Rokaki
         }
       end
 
-      let(:db) { :sqlite }
+      let(:db) { selected_db }
       let(:keys) { [:a] }
       let(:prefix) { nil }
       let(:infix) { :_ }
@@ -45,48 +45,32 @@ module Rokaki
         end
 
         context 'with LIKE semantics' do
-          context 'with sqlite' do
-            let(:expected_filter_method) do
+          let(:expected_filter_method) do
+            case selected_db
+            when :sqlite
               "def filter_a;" \
                 "@model.where(\"a LIKE :query\"," \
                 " query: \"%\#{a}\")" \
                 " end;"
-            end
-
-            let(:like_semantics) { {a: :prefix} }
-
-            it 'maps the keys' do
-              filter_generator.call
-              result = filter_generator
-
-              aggregate_failures do
-                expect(result.filter_method).to eq(expected_filter_method)
-                expect(result.filter_template).to eq(expected_filter_template)
-              end
+            when :postgres
+              "def filter_a;@model.where(\"a LIKE ANY (ARRAY[?])\", prepare_terms(a, :prefix)) end;"
+            when :mysql
+              "def filter_a;@model.where(\"a LIKE :query\", query: \"%\#{a}\") end;"
             end
           end
 
-          context 'with postgres' do
-            let(:db) { :postgres }
+          let(:like_semantics) { {a: :prefix} }
 
-            let(:expected_filter_method) do
-              "def filter_a;@model.where(\"a LIKE ANY (ARRAY[?])\", prepare_terms(a, :prefix)) end;"
-            end
+          it 'maps the keys' do
+            filter_generator.call
+            result = filter_generator
 
-            let(:like_semantics) { {a: :prefix} }
-
-            it 'maps the keys' do
-              filter_generator.call
-              result = filter_generator
-
-              aggregate_failures do
-                expect(result.filter_method).to eq(expected_filter_method)
-                expect(result.filter_template).to eq(expected_filter_template)
-              end
+            aggregate_failures do
+              expect(result.filter_method).to eq(expected_filter_method)
+              expect(result.filter_template).to eq(expected_filter_template)
             end
           end
         end
-
 
       end
     end

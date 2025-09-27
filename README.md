@@ -424,9 +424,16 @@ After checking out the repo, run `bin/setup` to install dependencies.
 
 ### Setting up the test database
 
+#### Postgres
 ```
 docker pull postgres
 docker run --name rokaki-postgres -e POSTGRES_USER=rokaki -e POSTGRES_PASSWORD=rokaki -d -p 5432:5432 postgres
+```
+
+#### Mysql
+```
+docker pull mysql
+docker run --name rokaki-mysql -e MYSQL_ROOT_PASSWORD=rokaki -e MYSQL_PASSWORD=rokaki -e MYSQL_DATABASE=rokaki -e MYSQL_USER=rokaki -d -p 3306:3306 mysql:latest mysqld
 ```
 
 Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

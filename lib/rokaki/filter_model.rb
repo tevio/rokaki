@@ -19,6 +19,34 @@ module Rokaki
       end
     end
 
+    def prepare_regex_terms(param, mode)
+      if Array === param
+        param_map = param.map { |term| ".*#{term}.*" } if mode == :circumfix
+        param_map = param.map { |term| ".*#{term}" } if mode == :prefix
+        param_map = param.map { |term| "#{term}.*" } if mode == :suffix
+        return param_map.join("|")
+      else
+        return [".*#{param}.*"] if mode == :circumfix
+        return [".*#{param}"] if mode == :prefix
+        return ["#{param}.*"] if mode == :suffix
+      end
+    end
+
+    # "SELECT `articles`.* FROM `articles` INNER JOIN `authors` ON `authors`.`id` = `articles`.`author_id` WHERE (`authors`.`first_name` LIKE BINARY '%teev%' OR `authors`.`first_name` LIKE BINARY '%arv%')"
+    def prepare_or_terms(param, type, mode)
+      if Array === param
+        param_map = param.map { |term| "%#{term}%" } if mode == :circumfix
+        param_map = param.map { |term| "%#{term}" } if mode == :prefix
+        param_map = param.map { |term| "#{term}%" } if mode == :suffix
+
+        return param_map.join(" OR #{type} ")
+      else
+        return ["%#{param}%"] if mode == :circumfix
+        return ["%#{param}"] if mode == :prefix
+        return ["#{param}%"] if mode == :suffix
+      end
+    end
+
 
     module ClassMethods
       include Filterable::ClassMethods
@@ -143,9 +171,31 @@ module Rokaki
         end
       end
 
+      def filter_db(db)
+        @_filter_db = db
+      end
+
       def filter_model(model_class)
         @model = (model_class.is_a?(Class) ? model_class : Object.const_get(model_class.capitalize))
         class_eval "def set_model; @model ||= #{@model}; end;"
+      end
+
+      def case_sensitive
+        if @_filter_db == :postgres
+          'LIKE'
+        elsif @_filter_db == :mysql
+          # 'LIKE BINARY'
+          'REGEXP'
+        end
+      end
+
+      def case_insensitive
+        if @_filter_db == :postgres
+          'ILIKE'
+        elsif @_filter_db == :mysql
+          # 'LIKE'
+          'REGEXP'
+        end
       end
 
       def like(args)
@@ -153,7 +203,7 @@ module Rokaki
         @_like_semantics = (@_like_semantics || {}).merge(args)
 
         like_keys = LikeKeys.new(args)
-        like_filters(like_keys, term_type: :like)
+        like_filters(like_keys, term_type: case_sensitive)
       end
 
       def ilike(args)
@@ -161,7 +211,7 @@ module Rokaki
         @i_like_semantics = (@i_like_semantics || {}).merge(args)
 
         like_keys = LikeKeys.new(args)
-        like_filters(like_keys, term_type: :ilike)
+        like_filters(like_keys, term_type: case_insensitive)
       end
 
       # the model method is called to instatiate @model from the

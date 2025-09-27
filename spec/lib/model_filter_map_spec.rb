@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 require 'spec_helper'
-require 'support/active_record_setup'
+# require 'support/active_record_setup'
 
 module Rokaki
-  RSpec.describe "FilterModel#filter_map" do
+  RSpec.shared_examples "FilterModel#filter_map" do |selected_db|
     let(:author_1_first_name) { 'Shteevine' }
     let(:author_1_last_name) { 'Martini' }
 
@@ -129,7 +129,7 @@ module Rokaki
 
               filterable_object_name :fylterz
               filter_key_prefix :__
-              filter_model :article
+              filter_model :article, db: selected_db
 
               define_query_key :query # must be decalred before the filter ('like' n this case)
               like title: :circumfix, content: :circumfix
@@ -155,7 +155,7 @@ module Rokaki
               include FilterModel
 
               filter_key_prefix :__
-              filter_model :article
+              filter_model :article, db: selected_db
 
               define_query_key :query # must be decalred before the filter ('like' n this case)
               like title: :circumfix, or: { content: :circumfix }
@@ -182,7 +182,7 @@ module Rokaki
 
               or_key :oared
               filter_key_prefix :__
-              filter_model :article
+              filter_model :article, db: selected_db
 
               define_query_key :query # must be decalred before the filter ('like' n this case)
               like title: :circumfix, oared: { content: :circumfix }
@@ -211,7 +211,7 @@ module Rokaki
             Class.new do
               include FilterModel
 
-              filter_map :author, :query, like: { first_name: :circumfix, last_name: :circumfix }
+              filter_map :author, :query, like: { first_name: :circumfix, last_name: :circumfix }, db: selected_db
 
               attr_accessor :filters
 
@@ -240,7 +240,7 @@ module Rokaki
             Class.new do
               include FilterModel
 
-              filter_map :author, :query, like: { first_name: :circumfix, or: { last_name: :circumfix } }
+              filter_map :author, :query, like: { first_name: :circumfix, or: { last_name: :circumfix } }, db: selected_db
 
               attr_accessor :filters
 
@@ -278,7 +278,7 @@ module Rokaki
                   title: :circumfix
                 }
               },
-            }
+            }, db: selected_db
 
             attr_accessor :filters
 
@@ -319,7 +319,7 @@ module Rokaki
                 },
                 content: :circumfix
               },
-            }
+            }, db: selected_db
 
             attr_accessor :filters
 
@@ -356,7 +356,7 @@ module Rokaki
                   title: :suffix
                 }
               },
-            }
+            }, db: selected_db
 
             attr_accessor :filters
 
@@ -393,7 +393,7 @@ module Rokaki
                   title: :suffix
                 }
               },
-            }
+            }, db: selected_db
 
             attr_accessor :filters
 

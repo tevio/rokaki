@@ -3,7 +3,8 @@ require 'spec_helper'
 require 'support/active_record_setup'
 
 module Rokaki
-  RSpec.describe FilterModel do
+  RSpec.shared_examples "FilterModel" do |selected_db|
+
     let(:author_1_first_name) { 'Shteevie' }
     let(:author_1_last_name) { 'Martini' }
 
@@ -126,6 +127,7 @@ module Rokaki
 
           filter_key_prefix :__
           filter_model :article
+          filter_db selected_db
           filters :title
 
           attr_accessor :filters
@@ -154,6 +156,7 @@ module Rokaki
         Class.new do
           include FilterModel
 
+          filter_db selected_db
           filter_key_prefix :__
           # filter_model :article
           filters :date, :title, author: %i[first_name last_name]
@@ -200,7 +203,6 @@ module Rokaki
         it 'returns the filtered item' do
           test = dummy_class.new(filters: filters, model: Article)
           aggregate_failures do
-
             expect(test.results).to include(article_1_auth_1, article_2_auth_1, article_3_auth_2)
             expect(test.results).not_to include(article_4_auth_3)
           end
@@ -216,7 +218,7 @@ module Rokaki
 
           # filter_model :article
           # like title: :circumfix
-          filter :article, like: { title: :circumfix }
+          filter :article, like: { title: :circumfix }, db: selected_db
 
           attr_accessor :filters
 
@@ -250,6 +252,9 @@ module Rokaki
           Class.new do
             include FilterModel
 
+            # order of precedence of filter_db matters here which is a problem
+            filter_db selected_db
+
             like author: {
                   first_name: :circumfix,
                   last_name: :circumfix
@@ -278,6 +283,7 @@ module Rokaki
 
           it 'returns the filtered item' do
             test = dummy_class.new(filters: filters)
+
             aggregate_failures do
               expect(test.results).to include(article_1_auth_1)
               expect(test.results).not_to include(article_3_auth_2)
@@ -319,7 +325,7 @@ module Rokaki
                 }
               },
               match: %i[title created_at],
-              db: :postgres
+              db: selected_db
 
             attr_accessor :filters
 
@@ -406,7 +412,8 @@ module Rokaki
                   title: :circumfix
                 }
               },
-            }
+            },
+          db: selected_db
 
           attr_accessor :filters, :model
 
@@ -447,7 +454,7 @@ module Rokaki
                   title: :circumfix
                 }
               },
-            }
+            }, db: selected_db
 
           attr_accessor :filters, :model
 
