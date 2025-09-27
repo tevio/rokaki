@@ -1,5 +1,5 @@
 adapter: postgresql
 host: localhost
-username: admin
-password: P@ssw0rd
+username: postgres
+password: postgres
 database: rokaki

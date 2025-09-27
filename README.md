@@ -422,7 +422,7 @@ filterable.results
 ### Ruby setup
 After checking out the repo, run `bin/setup` to install dependencies.
 
-### Setting up the test database
+### Setting up the test databases
 
 #### Postgres
 ```
