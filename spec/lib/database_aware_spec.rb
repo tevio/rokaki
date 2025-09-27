@@ -7,8 +7,8 @@ require 'support/database_manager'
 #   db_manager.establish
 #   db_manager.define_schema
 #   db_manager.eval_record_layer
-#   # include_examples "FilterModel", :postgres
-#   include_examples "FilterModel#filter_map", :postgres
+#   include_examples "FilterModel", :postgres
+#   # include_examples "FilterModel#filter_map", :postgres
 # end
 
 RSpec.describe "MySQL" do
