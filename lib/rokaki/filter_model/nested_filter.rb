@@ -65,6 +65,22 @@ module Rokaki
         current_like_key
       end
 
+      def case_sensitive
+        if db == :postgres
+          'LIKE'
+        elsif db == :mysql
+          'LIKE BINARY'
+        end
+      end
+
+      def case_insensitive
+        if db == :postgres
+          'ILIKE'
+        elsif db == :mysql
+          'LIKE'
+        end
+      end
+
       def _build_deep_chain(keys)
         name    = ''
         count   = keys.size - 1
@@ -80,9 +96,9 @@ module Rokaki
         leaf = nil
 
         if search_mode = find_like_key(keys)
-          type = 'LIKE'
+          type = case_sensitive
         elsif search_mode = find_i_like_key(keys)
-          type = 'ILIKE'
+          type = case_insensitive
         end
         leaf = keys.pop
 
@@ -144,7 +160,6 @@ module Rokaki
           query = "where(\"#{key}.#{leaf} #{type} :query\", "
           query += "query: \"%\#{#{filter}}%\")" if search_mode == :circumfix
           query += "query: \"%\#{#{filter}}\")" if search_mode == :prefix
-          query += "query: \"\#{#{filter}}%\")" if search_mode == :suffix
         end
 
         query

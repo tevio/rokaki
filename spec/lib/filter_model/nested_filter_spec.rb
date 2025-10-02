@@ -2,88 +2,39 @@
 
 module Rokaki
   module FilterModel
-    RSpec.describe NestedFilter do
-      subject(:filter_generator) { described_class.new(**filter_args) }
+    RSpec.shared_examples "FilterModel::NestedFilter" do |selected_db|
+      describe NestedFilter do
+        subject(:filter_generator) { described_class.new(**filter_args) }
 
-      let(:filter_args) do
-        {
-          filter_key_object: filter_key_object,
-          prefix: prefix,
-          infix: infix,
-          like_semantics: like_semantics,
-          i_like_semantics: i_like_semantics,
-          db: db
-        }
-      end
-
-      let(:db) { :sqlite }
-      let(:filter_key_object) { { a: :a } }
-      let(:prefix) { nil }
-      let(:infix) { :_ }
-      let(:like_semantics) { {} }
-      let(:i_like_semantics) { {} }
-
-      let(:expected_filter_method) do
-        "def filter_a_a;" \
-          "@model.joins(:a).where({ as: { a: a_a } });" \
-        " end;"
-      end
-
-      let(:expected_filter_template) do
-        "@model = filter_a_a if a_a;"
-      end
-
-      context 'with shallow keys' do
-        it 'maps the keys' do
-          filter_generator.call
-          result = filter_generator
-
-          aggregate_failures do
-            expect(result.filter_methods).to eq([expected_filter_method])
-            expect(result.filter_templates).to eq([expected_filter_template])
-          end
+        let(:filter_args) do
+          {
+            filter_key_object: filter_key_object,
+            prefix: prefix,
+            infix: infix,
+            like_semantics: like_semantics,
+            i_like_semantics: i_like_semantics,
+            db: db
+          }
         end
 
-        context 'with custom fixations' do
-          let(:prefix) { :_ }
-          let(:infix) { :__ }
+        let(:db) { selected_db }
+        let(:filter_key_object) { { a: :a } }
+        let(:prefix) { nil }
+        let(:infix) { :_ }
+        let(:like_semantics) { {} }
+        let(:i_like_semantics) { {} }
 
-          let(:expected_filter_method) do
-            "def _filter__a__a;" \
-              "@model.joins(:a).where({ as: { a: _a__a } });" \
-              " end;"
-          end
-
-          let(:expected_filter_template) do
-            "@model = _filter__a__a if _a__a;"
-          end
-
-          it 'maps the keys' do
-            filter_generator.call
-            result = filter_generator
-
-            aggregate_failures do
-              expect(result.filter_methods).to eq([expected_filter_method])
-              expect(result.filter_templates).to eq([expected_filter_template])
-            end
-          end
+        let(:expected_filter_method) do
+          "def filter_a_a;" \
+            "@model.joins(:a).where({ as: { a: a_a } });" \
+            " end;"
         end
-      end
 
-      context 'with deep keys' do
-        context 'with basic filter type' do
-          let(:filter_key_object) { { a: { b: { c: :d } } } }
+        let(:expected_filter_template) do
+          "@model = filter_a_a if a_a;"
+        end
 
-          let(:expected_filter_method) do
-            "def filter_a_b_c_d;" \
-              "@model.joins(a: { b: :c }).where({ as: { bs: { cs: { d: a_b_c_d } } } });" \
-              " end;"
-          end
-
-          let(:expected_filter_template) do
-            "@model = filter_a_b_c_d if a_b_c_d;"
-          end
-
+        context 'with shallow keys' do
           it 'maps the keys' do
             filter_generator.call
             result = filter_generator
@@ -99,13 +50,13 @@ module Rokaki
             let(:infix) { :__ }
 
             let(:expected_filter_method) do
-              "def _filter__a__b__c__d;" \
-                "@model.joins(a: { b: :c }).where({ as: { bs: { cs: { d: _a__b__c__d } } } });" \
+              "def _filter__a__a;" \
+                "@model.joins(:a).where({ as: { a: _a__a } });" \
                 " end;"
             end
 
             let(:expected_filter_template) do
-              "@model = _filter__a__b__c__d if _a__b__c__d;"
+              "@model = _filter__a__a if _a__a;"
             end
 
             it 'maps the keys' do
@@ -120,38 +71,37 @@ module Rokaki
           end
         end
 
-        context 'with LIKE filter type' do
-          let(:like_semantics) { { a: { b: { c: { d: :circumfix } } } } }
-          let(:filter_key_object) { { a: { b: { c: :d } } } }
+        context 'with deep keys' do
+          context 'with basic filter type' do
+            let(:filter_key_object) { { a: { b: { c: :d } } } }
 
-          let(:expected_filter_method) do
-            "def filter_a_b_c_d;" \
-              "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{a_b_c_d}%\");" \
-              " end;"
-          end
-
-          let(:expected_filter_template) do
-            "@model = filter_a_b_c_d if a_b_c_d;"
-          end
-
-          it 'maps the keys' do
-            filter_generator.call
-            result = filter_generator
-
-            aggregate_failures do
-              expect(result.filter_methods).to eq([expected_filter_method])
-              expect(result.filter_templates).to eq([expected_filter_template])
+            let(:expected_filter_method) do
+              "def filter_a_b_c_d;" \
+                "@model.joins(a: { b: :c }).where({ as: { bs: { cs: { d: a_b_c_d } } } });" \
+                " end;"
             end
-          end
 
-          context 'with custom fixations' do
-            context 'with sqlite' do
+            let(:expected_filter_template) do
+              "@model = filter_a_b_c_d if a_b_c_d;"
+            end
+
+            it 'maps the keys' do
+              filter_generator.call
+              result = filter_generator
+
+              aggregate_failures do
+                expect(result.filter_methods).to eq([expected_filter_method])
+                expect(result.filter_templates).to eq([expected_filter_template])
+              end
+            end
+
+            context 'with custom fixations' do
               let(:prefix) { :_ }
               let(:infix) { :__ }
 
               let(:expected_filter_method) do
                 "def _filter__a__b__c__d;" \
-                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{_a__b__c__d}%\");" \
+                  "@model.joins(a: { b: :c }).where({ as: { bs: { cs: { d: _a__b__c__d } } } });" \
                   " end;"
               end
 
@@ -169,16 +119,57 @@ module Rokaki
                 end
               end
             end
+          end
 
-            context 'with postgres' do
+          context 'with LIKE filter type' do
+            let(:like_semantics) { { a: { b: { c: { d: :circumfix } } } } }
+            let(:filter_key_object) { { a: { b: { c: :d } } } }
+
+            let(:expected_filter_method) do
+              if selected_db == :postgres
+                "def filter_a_b_c_d;" \
+                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE ANY (ARRAY[?])\", prepare_terms(a_b_c_d, :circumfix));" \
+                " end;"
+              elsif selected_db == :mysql
+                "def filter_a_b_c_d;" \
+                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY :query\", query: \"%\#{a_b_c_d}%\");" \
+                  " end;"
+              end
+            end
+
+            let(:expected_filter_template) do
+              "@model = filter_a_b_c_d if a_b_c_d;"
+            end
+
+            it 'maps the keys' do
+              filter_generator.call
+              result = filter_generator
+
+              aggregate_failures do
+                expect(result.filter_methods).to eq([expected_filter_method])
+                expect(result.filter_templates).to eq([expected_filter_template])
+              end
+            end
+
+            context 'with custom fixations' do
               let(:prefix) { :_ }
               let(:infix) { :__ }
-              let(:db) { :postgres }
 
               let(:expected_filter_method) do
-                "def _filter__a__b__c__d;" \
-                  "@model.joins(a: { b: :c }).where(\"cs.d LIKE ANY (ARRAY[?])\", prepare_terms(_a__b__c__d, :circumfix));" \
-                " end;"
+                case selected_db
+                when :sqlite
+                  "def _filter__a__b__c__d;" \
+                    "@model.joins(a: { b: :c }).where(\"cs.d LIKE :query\", query: \"%\#{_a__b__c__d}%\");" \
+                    " end;"
+                when :postgres
+                  "def _filter__a__b__c__d;" \
+                    "@model.joins(a: { b: :c }).where(\"cs.d LIKE ANY (ARRAY[?])\", prepare_terms(_a__b__c__d, :circumfix));" \
+                    " end;"
+                when :mysql
+                  "def _filter__a__b__c__d;" \
+                    "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY :query\", query: \"%\#{_a__b__c__d}%\");" \
+                    " end;"
+                end
               end
 
               let(:expected_filter_template) do
@@ -190,8 +181,8 @@ module Rokaki
                 result = filter_generator
 
                 aggregate_failures do
-                  expect(result.filter_methods.first).to eq(expected_filter_method)
-                  expect(result.filter_templates.first).to eq(expected_filter_template)
+                  expect(result.filter_methods).to eq([expected_filter_method])
+                  expect(result.filter_templates).to eq([expected_filter_template])
                 end
               end
             end

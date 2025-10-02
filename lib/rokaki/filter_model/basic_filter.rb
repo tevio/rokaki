@@ -33,13 +33,29 @@ module Rokaki
         @filter_template = "@model = #{prefix}filter_#{name} if #{filter};"
       end
 
+      def case_sensitive
+        if db == :postgres
+          'LIKE'
+        elsif db == :mysql
+          'LIKE BINARY'
+        end
+      end
+
+      def case_insensitive
+        if db == :postgres
+          'ILIKE'
+        elsif db == :mysql
+          'LIKE'
+        end
+      end
+
       def _chain_filter_type(key)
         filter = "#{prefix}#{key}"
         query  = ''
 
         if like_semantics && mode = like_semantics[key]
           query = build_like_query(
-            type: 'LIKE',
+            type: case_sensitive,
             query: query,
             filter: filter,
             mode: mode,
@@ -47,7 +63,7 @@ module Rokaki
           )
         elsif i_like_semantics && mode = i_like_semantics[key]
           query = build_like_query(
-            type: 'ILIKE',
+            type: case_insensitive,
             query: query,
             filter: filter,
             mode: mode,
@@ -59,6 +75,20 @@ module Rokaki
 
         @filter_query = query
       end
+
+      # # @model.where('`authors`.`first_name` LIKE BINARY :query', query: "%teev%").or(@model.where('`authors`.`first_name` LIKE BINARY :query', query: "%imi%"))
+      # if Array == filter
+      #     first_term = filter.unshift
+      #     query = "@model.where(\"#{key} #{type} ANY (ARRAY[?])\", "
+      #     query += "prepare_terms(#{first_term}, :#{mode}))"
+      #     filter.each { |term|
+      #       query += ".or(@model.where(\"#{key} #{type} ANY (ARRAY[?])\", "
+      #       query += "prepare_terms(#{first_term}, :#{mode})))"
+      #     }
+      # else
+      #   query = "@model.where(\"#{key.to_s.split(".").map { |item| "`#{item}`" }.join(".")} #{type.to_s.upcase} :query\", "
+      #   query += "query: prepare_terms(#{filter}, \"#{type.to_s.upcase}\", :#{search_mode}))"
+      # end
 
       def build_like_query(type:, query:, filter:, mode:, key:)
         if db == :postgres

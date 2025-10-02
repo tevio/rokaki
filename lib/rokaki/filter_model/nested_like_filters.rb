@@ -227,9 +227,7 @@ module Rokaki
           query += "prepare_terms(#{filter}, :#{search_mode}))"
         else
           query = "where(\"#{key_leaf} #{type.to_s.upcase} :query\", "
-          query += "query: \"%\#{#{filter}}%\")" if search_mode == :circumfix
-          query += "query: \"%\#{#{filter}}\")" if search_mode == :prefix
-          query += "query: \"\#{#{filter}}%\")" if search_mode == :suffix
+          query += "query: prepare_regex_terms(#{filter}, :#{search_mode}))"
         end
 
         query

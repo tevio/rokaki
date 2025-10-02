@@ -1,0 +1,5 @@
+supported:
+  - postgresql
+  - mysql
+  - sqlite
+
