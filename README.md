@@ -2,9 +2,13 @@
 
 [![Gem Version](https://badge.fury.io/rb/rokaki.svg)](https://badge.fury.io/rb/rokaki)
 
-This gem was born out of a desire to dry up filtering services in Rails apps or any Ruby app that uses the concept of "filters" or "facets".
+This gem was written to dry up filtering services in ActiveRecord based Rails apps or any plain Ruby app looking to implement "filters" or "faceted" search.
 
-There are two modes of use `Filterable` and `FilterModel` that can be activated through the use of two mixins respectively, `include Rokaki::Filterable` or `include Rokaki::FilterModel`.
+The overall vision is to abstract away all of the lower level repetitive SQL and relational code to allow you to write model filters in a simple, relatively intuitive way, using ruby hashes and arrays mostly.
+
+The DSL allows you to construct complex search models to filter results through without writing any SQL. I would recommend the reader to consult the specs in order to understand the features and syntax in detail, an intermediate understanding of Ruby and rspec TDD, and basic relational logic are recommended.
+
+There are two modes of use, `Filterable` (designed for plain Ruby) and `FilterModel` (designed for Rails) that can be activated through the use of two mixins respectively, `include Rokaki::Filterable` or `include Rokaki::FilterModel`.
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -137,7 +141,7 @@ You can specify several configuration options, for example a `filter_key_prefix`
 ## `Rokaki::FilterModel` - Usage
 
 ### ActiveRecord
-Include `Rokaki::FilterModel` in any ActiveRecord model (only AR >= 6.0.0 tested so far) you can generate the filter keys and the actual filter lookup code using the `filters` keyword on a model like so:-
+Include `Rokaki::FilterModel` in any ActiveRecord model (only AR >= 8.0.3 tested so far) you can generate the filter keys and the actual filter lookup code using the `filters` keyword on a model like so:-
 
 ```ruby
 # Given the models
