@@ -178,7 +178,7 @@ You can also filter collections of fields, simply pass an array of filter values
 
 
 ### Partial matching
-You can use `like` (or, if you use postgres, the case insensitive `ilike`) to perform a partial match on a specific field, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
+You can use `like` or the case insensitive `ilike` to perform a partial match on a specific field, there are 3 options:- `:prefix`, `:circumfix` and `:suffix`. There are two syntaxes you can use for this:-
 
 #### 1. The `filter` command syntax
 
@@ -188,7 +188,7 @@ class ArticleFilter
   include Rokaki::FilterModel
 
   filter :article,
-    like: { # you can use ilike here instead if you use postgres and want case insensitive results
+    like: { # you can use ilike here instead if you want case insensitive results
       author: {
         first_name: :circumfix,
         last_name: :circumfix
@@ -328,7 +328,7 @@ class ArticleFilter
 
   filters :date, :title, author: [:first_name, :last_name]
   like title: :circumfix
-  # ilike title: :circumfix # case insensitive postgres mode
+  # ilike title: :circumfix # case insensitive mode
 
   attr_accessor :filters
 
