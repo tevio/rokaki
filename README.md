@@ -1,6 +1,7 @@
 # Rokaki
 
 [![Gem Version](https://badge.fury.io/rb/rokaki.svg)](https://badge.fury.io/rb/rokaki)
+[![Run RSpec tests](https://github.com/tevio/rokaki/actions/workflows/spec.yml/badge.svg)](https://github.com/tevio/rokaki/actions/workflows/spec.yml)
 
 This gem was written to dry up filtering services in ActiveRecord based Rails apps or any plain Ruby app looking to implement "filters" or "faceted" search.
 
