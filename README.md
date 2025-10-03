@@ -441,7 +441,13 @@ docker pull mysql
 docker run --name rokaki-mysql -e MYSQL_ROOT_PASSWORD=rokaki -e MYSQL_PASSWORD=rokaki -e MYSQL_DATABASE=rokaki -e MYSQL_USER=rokaki -d -p 3306:3306 mysql:latest mysqld
 ```
 
-Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+### Specialised test runner
+The test suite is designed to run against all supported database backends, since this can cause problems with timing and connection pools, the recommended way to run the tests is via a shell script.
+
+From the rokaki root directory run: `./spec/ordered_run.sh`. This is the same script that runs on the Github CI here: [![Run RSpec tests](https://github.com/tevio/rokaki/actions/workflows/spec.yml/badge.svg)](https://github.com/tevio/rokaki/actions/workflows/spec.yml)
+
+### Standard test runner (only recommended for development cycles)
+You can still run `rake spec` to run the tests, there's no guarantee they will all pass due to race conditions from using multiple db backends (see above), but this mode is recommended for focusing on specific backends or tests during development (comment out what you don't want). You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
