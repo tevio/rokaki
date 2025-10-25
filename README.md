@@ -30,7 +30,7 @@ And then execute:
 
 ## `Rokaki::Filterable` - Usage
 
-To use the DSL first include the `Rokaki::Filterable` module in your [por](http://blog.jayfields.com/2007/10/ruby-poro.html) class.
+To use the DSL first include the `Rokaki::Filterable` module in your class.
 
 ### `#define_filter_keys`
 #### A Simple Example
