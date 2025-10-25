@@ -103,6 +103,23 @@ module Rokaki
 
       private
 
+      def normalize_like_modes(obj)
+        case obj
+        when Hash
+          obj.each_with_object({}) do |(k, v), h|
+            h[k] = normalize_like_modes(v)
+          end
+        when Array
+          obj.map { |e| normalize_like_modes(e) }
+        when Symbol
+          # Treat alternative affixes as circumfix
+          return :circumfix if [:parafix, :confix, :ambifix].include?(obj)
+          obj
+        else
+          obj
+        end
+      end
+
       def filter_map(model, query_key, options)
         filter_model(model)
         @filter_map_query_key = query_key
@@ -259,17 +276,19 @@ module Rokaki
 
       def like(args)
         raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
-        @_like_semantics = (@_like_semantics || {}).merge(args)
+        normalized = normalize_like_modes(args)
+        @_like_semantics = (@_like_semantics || {}).merge(normalized)
 
-        like_keys = LikeKeys.new(args)
+        like_keys = LikeKeys.new(normalized)
         like_filters(like_keys, term_type: case_sensitive)
       end
 
       def ilike(args)
         raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
-        @i_like_semantics = (@i_like_semantics || {}).merge(args)
+        normalized = normalize_like_modes(args)
+        @i_like_semantics = (@i_like_semantics || {}).merge(normalized)
 
-        like_keys = LikeKeys.new(args)
+        like_keys = LikeKeys.new(normalized)
         like_filters(like_keys, term_type: case_insensitive)
       end
 

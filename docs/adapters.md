@@ -27,7 +27,7 @@ All adapters support the same modes, which you declare via the values in your `l
 
 - `prefix` → `%term`
 - `suffix` → `term%`
-- `circumfix` → `%term%`
+- `circumfix` → `%term%` (synonyms supported: `:parafix`, `:confix`, `:ambifix`)
 
 Example:
 

@@ -29,7 +29,8 @@ class DatabaseManager
   end
 
   def establish
-    if @database_config['adapter'] == 'sqlserver'
+    case @database_config['adapter']
+    when 'sqlserver'
       begin
         require 'tiny_tds'
       rescue LoadError
@@ -45,10 +46,28 @@ class DatabaseManager
       master_config = @database_config.merge('database' => 'master')
       ActiveRecord::Base.establish_connection(master_config)
       ActiveRecord::Base.connection.execute("IF DB_ID(N'#{dbname}') IS NULL CREATE DATABASE [#{dbname}]")
-      # Now connect to target DB
       ActiveRecord::Base.establish_connection(@database_config)
-      # Touch connection
-      ActiveRecord::Base.connection
+      ActiveRecord::Base.connection # touch
+    when 'postgresql'
+      # Ensure database exists by connecting to default 'postgres' DB
+      dbname = @database_config['database']
+      bootstrap = @database_config.merge('database' => 'postgres')
+      ActiveRecord::Base.establish_connection(bootstrap)
+      exists = ActiveRecord::Base.connection.exec_query("SELECT 1 FROM pg_database WHERE datname='#{dbname}'").any?
+      unless exists
+        ActiveRecord::Base.connection.execute("CREATE DATABASE \"#{dbname}\"")
+      end
+      ActiveRecord::Base.establish_connection(@database_config)
+      ActiveRecord::Base.connection # touch
+    when 'mysql2'
+      # Ensure database exists by connecting without specifying database
+      dbname = @database_config['database']
+      bootstrap = @database_config.dup
+      bootstrap.delete('database')
+      ActiveRecord::Base.establish_connection(bootstrap)
+      ActiveRecord::Base.connection.execute("CREATE DATABASE IF NOT EXISTS `#{dbname}`")
+      ActiveRecord::Base.establish_connection(@database_config)
+      ActiveRecord::Base.connection # touch
     else
       ActiveRecord::Base.establish_connection(@database_config)
     end

@@ -64,13 +64,14 @@ You can keep chaining other scopes/clauses:
 Article.filter(params).order(published: :desc).limit(20)
 ```
 
-## LIKE modes and multi-term input
+## LIKE modes and affix options
 
 Declare the LIKE mode via the value in your `like` mapping (there is no `modes:` option). For example: `like title: :prefix`.
 
-- `prefix` → matches strings that start with a term
-- `suffix` → matches strings that end with a term
-- `circumfix` → matches strings that contain a term
+- `prefix` → matches strings that start with a term (pattern: `%term`)
+- `suffix` → matches strings that end with a term (pattern: `term%`)
+- `circumfix` → matches strings that contain a term (pattern: `%term%`)
+  - Synonyms supported: `:parafix`, `:confix`, `:ambifix` (all behave the same as `:circumfix`)
 
 Each accepts a single string or an array of strings. Rokaki generates adapter‑aware SQL:
 
