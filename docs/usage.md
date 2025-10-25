@@ -33,7 +33,7 @@ class Article < ActiveRecord::Base
 
   filter_map do
     # Simple LIKE filters
-    like :title, modes: %i[prefix suffix circumfix]
+    like title: :circumfix
     like :content, key: :q
 
     # Boolean or exact filters can go through custom blocks or other helpers
@@ -70,6 +70,8 @@ Article.filter(params).order(published: :desc).limit(20)
 ```
 
 ## LIKE modes and multi-term input
+
+Declare the LIKE mode via the value in your `like` mapping (there is no `modes:` option). For example: `like title: :prefix`.
 
 - `prefix` → matches strings that start with a term
 - `suffix` → matches strings that end with a term

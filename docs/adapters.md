@@ -23,11 +23,22 @@ Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, and SQL Server.
 
 ## LIKE modes
 
-All adapters support the same modes:
+All adapters support the same modes, which you declare via the values in your `like` mapping (there is no `modes:` option):
 
 - `prefix` → `%term`
 - `suffix` → `term%`
 - `circumfix` → `%term%`
+
+Example:
+
+```ruby
+filter_map do
+  like title: :circumfix
+  nested :author do
+    like first_name: :prefix
+  end
+end
+```
 
 When you pass an array of terms, Rokaki composes adapter‑appropriate SQL that matches any of the terms.
 
