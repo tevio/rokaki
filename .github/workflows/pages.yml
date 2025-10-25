@@ -1,30 +1,18 @@
-name: Deploy GitHub Pages
+name: Build documentation (no deploy)
 
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  pull_request:
 
 jobs:
-  build:
+  build-docs:
     runs-on: ubuntu-latest
     env:
       BUNDLE_GEMFILE: docs/Gemfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -36,18 +24,8 @@ jobs:
         run: |
           bundle exec jekyll build -s docs -d _site
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload built site artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: site
           path: _site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
