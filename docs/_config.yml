@@ -1,7 +1,11 @@
 title: Rokaki
 description: A DSL for filtering data in web requests (ActiveRecord)
-baseurl: ""
-url: ""
+# For project pages (https://<user>.github.io/<repo>), set:
+#   url: "https://tevio.github.io"
+#   baseurl: "/rokaki"
+# This ensures theme assets like /assets/main.css resolve under /rokaki/ on GitHub Pages.
+baseurl: "/rokaki"
+url: "https://tevio.github.io"
 theme: minima
 
 # Build settings
