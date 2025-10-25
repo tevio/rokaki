@@ -120,7 +120,72 @@ module Rokaki
         end
       end
 
-      def filter_map(model, query_key, options)
+      # Merge two nested like/ilike mappings
+      def deep_merge_like(a, b)
+        return b if a.nil? || a == {}
+        return a if b.nil? || b == {}
+        a.merge(b) do |_, v1, v2|
+          if v1.is_a?(Hash) && v2.is_a?(Hash)
+            deep_merge_like(v1, v2)
+          else
+            # Prefer later definitions
+            v2
+          end
+        end
+      end
+
+      # Wrap a normalized mapping with current nested context stack
+      def wrap_in_context(mapping)
+        return mapping if !@__ctx_stack || @__ctx_stack.empty?
+        @__ctx_stack.reverse.inject(mapping) { |acc, key| { key => acc } }
+      end
+
+      # Block DSL: nested context for like/ilike within filter_map block
+      def nested(name, &blk)
+        if instance_variable_defined?(:@__in_filter_map_block) && @__in_filter_map_block
+          raise ArgumentError, 'nested requires a symbol name' unless name.is_a?(Symbol)
+          @__ctx_stack << name
+          instance_eval(&blk) if blk
+          @__ctx_stack.pop
+        else
+          raise NoMethodError, 'nested can only be used inside filter_map block'
+        end
+      end
+
+      def filter_map(*args, &block)
+        # Block form: requires prior calls to filter_model and define_query_key
+        if block_given? && args.empty?
+          raise ArgumentError, 'define_query_key must be called before block filter_map' unless @filter_map_query_key
+          raise ArgumentError, 'filter_model must be called before block filter_map' unless @model
+          @_filter_db ||= :postgres
+
+          # Enter block-collection mode
+          @__in_filter_map_block = true
+          @__block_like_accumulator = {}
+          @__block_ilike_accumulator = {}
+          @__ctx_stack = []
+
+          instance_eval(&block)
+
+          # Exit and materialize definitions
+          @__in_filter_map_block = false
+          unless @__block_like_accumulator.empty?
+            like(@__block_like_accumulator)
+          end
+          unless @__block_ilike_accumulator.empty?
+            ilike(@__block_ilike_accumulator)
+          end
+
+          # cleanup
+          @__block_like_accumulator = nil
+          @__block_ilike_accumulator = nil
+          @__ctx_stack = nil
+
+          return
+        end
+
+        # Positional/legacy form
+        model, query_key, options = args
         filter_model(model)
         @filter_map_query_key = query_key
 
@@ -143,6 +208,12 @@ module Rokaki
       end
 
       def filters(*filter_keys)
+        # In block form for FilterModel, allow equality filters inside nested contexts
+        if instance_variable_defined?(:@__in_filter_map_block) && @__in_filter_map_block
+          wrapped_keys = filter_keys.map { |fk| wrap_in_context(fk) }
+          filter_keys = wrapped_keys
+        end
+
         if @filter_map_query_key
           define_filter_map(@filter_map_query_key, *filter_keys)
         else
@@ -276,6 +347,12 @@ module Rokaki
 
       def like(args)
         raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
+        if instance_variable_defined?(:@__in_filter_map_block) && @__in_filter_map_block
+          normalized = normalize_like_modes(args)
+          @__block_like_accumulator = deep_merge_like(@__block_like_accumulator, wrap_in_context(normalized))
+          return
+        end
+
         normalized = normalize_like_modes(args)
         @_like_semantics = (@_like_semantics || {}).merge(normalized)
 
@@ -285,6 +362,12 @@ module Rokaki
 
       def ilike(args)
         raise ArgumentError, 'argument mush be a hash' unless args.is_a? Hash
+        if instance_variable_defined?(:@__in_filter_map_block) && @__in_filter_map_block
+          normalized = normalize_like_modes(args)
+          @__block_ilike_accumulator = deep_merge_like(@__block_ilike_accumulator, wrap_in_context(normalized))
+          return
+        end
+
         normalized = normalize_like_modes(args)
         @i_like_semantics = (@i_like_semantics || {}).merge(normalized)
 

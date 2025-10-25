@@ -11,7 +11,7 @@ This page shows how to use Rokaki to define filters and apply them to ActiveReco
 Add the gem to your Gemfile and bundle:
 
 ```ruby
-gem "rokaki", "~> 0.11"
+gem "rokaki", "~> 0.13"
 ```
 
 ```bash
@@ -38,7 +38,7 @@ class ArticleQuery
   define_query_key :q
   like title: :circumfix, content: :circumfix
 
-  # Nested LIKEs via hash mapping (no block DSL)
+  # Nested LIKEs via hash mapping
   like author: { first_name: :prefix, last_name: :suffix }
 end
 ```
@@ -98,3 +98,91 @@ Params would include `author_first`, `author_first_prefix`, etc.
 - Use `key:` to map a filter to a different params key.
 - Combine multiple filters; Rokaki composes them with `AND` by default.
 - For advanced cases, write custom filters in your app by extending the DSL (see source for `BasicFilter`/`NestedFilter`).
+
+
+## Block-form DSL
+
+Note: The block-form DSL is available starting in Rokaki 0.13.0.
+
+Rokaki also supports a block-form DSL that is equivalent to the argument-based form. Use it when you prefer grouping your mappings in a single block.
+
+### FilterModel block form
+
+```ruby
+class ArticleQuery
+  include Rokaki::FilterModel
+
+  # Choose model and adapter
+  filter_model :article, db: :postgres # or :mysql, :sqlserver
+
+  # Declare a single query key used by all LIKE/equality filters below
+  define_query_key :q
+
+  # Declare mappings inside a block
+  filter_map do
+    # LIKE mappings on the base model
+    like title: :circumfix, content: :circumfix
+
+    # Nested mappings on associations
+    nested :author do
+      like first_name: :prefix, last_name: :suffix
+
+      # You can also declare equality filters in block form
+      filters :id
+    end
+  end
+
+  attr_accessor :filters
+  def initialize(filters: {})
+    @filters = filters
+  end
+end
+
+# Usage
+ArticleQuery.new(filters: { q: ["Intro", "Guide"] }).results
+```
+
+Notes:
+- Modes are declared by the values in your `like` mapping (`:prefix`, `:suffix`, `:circumfix`). Synonyms `:parafix`, `:confix`, `:ambifix` behave like `:circumfix`.
+- Arrays for `q` are supported across adapters. PostgreSQL uses `ANY (ARRAY[...])`, MySQL/SQL Server expand to OR chains as appropriate.
+
+### Filterable block form
+
+Use the block form to define simple key accessors (no SQL). Useful for plain Ruby objects or when building a mapping layer.
+
+```ruby
+class ArticleFilters
+  include Rokaki::Filterable
+  filter_key_prefix :__
+
+  filter_map do
+    filters :date, author: [:first_name, :last_name]
+
+    nested :author do
+      nested :location do
+        filters :city
+      end
+    end
+  end
+
+  # Expect a #filters method that returns a hash
+  attr_reader :filters
+  def initialize(filters: {})
+    @filters = filters
+  end
+end
+
+f = ArticleFilters.new(filters: {
+  date: '2025-01-01',
+  author: { first_name: 'Ada', last_name: 'Lovelace', location: { city: 'London' } }
+})
+
+f.__date                        # => '2025-01-01'
+f.__author__first_name          # => 'Ada'
+f.__author__last_name           # => 'Lovelace'
+f.__author__location__city      # => 'London'
+```
+
+Tips:
+- `filter_key_prefix` and `filter_key_infix` control the generated accessor names.
+- Inside the block, `nested :association` affects all `filters` declared within it.

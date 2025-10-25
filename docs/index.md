@@ -21,7 +21,7 @@ Get started below or jump to:
 Add to your application's Gemfile:
 
 ```ruby
-gem "rokaki", "~> 0.11"
+gem "rokaki", "~> 0.13"
 ```
 
 Then:
@@ -32,7 +32,9 @@ bundle install
 
 ## Quick start
 
-Use `Rokaki::FilterModel` and declare mappings with method arguments (no block DSL).
+You can declare mappings in two ways: argument-based (original) or block-form DSL. Both are equivalent.
+
+Argument-based form:
 
 ```ruby
 class ArticleQuery
@@ -58,6 +60,34 @@ end
 filtered = ArticleQuery.new(filters: params).results
 ```
 
+Block-form DSL (same behavior):
+
+```ruby
+class ArticleQuery
+  include Rokaki::FilterModel
+
+  filter_model :article, db: :postgres # or :mysql, :sqlserver
+  define_query_key :q
+
+  filter_map do
+    like title: :circumfix, content: :circumfix
+    nested :author do
+      like first_name: :prefix, last_name: :suffix
+      # You can also declare equality filters inside nested contexts
+      filters :id
+    end
+  end
+
+  attr_accessor :filters
+  def initialize(filters: {})
+    @filters = filters
+  end
+end
+
+# In a controller/service:
+filtered = ArticleQuery.new(filters: params).results
+```
+
 Where `params` can include keys like `q`, `author_first_name`, `author_last_name`, etc. The LIKE mode for each key is defined in your `like` mapping (e.g., `title: :circumfix`), and Rokaki builds the appropriate `WHERE` clauses safely and adapter‑aware.
 
 ## Matching modes
@@ -67,6 +97,14 @@ Where `params` can include keys like `q`, `author_first_name`, `author_last_name
 - circumfix: matches values that contain given term(s)
 
 All modes accept either a single string or an array of terms.
+
+## What’s new in 0.13.0
+
+- Block-form DSL parity across both FilterModel and Filterable
+- Circumfix affix synonyms supported: :parafix, :confix, :ambifix
+- SQL Server adapter support and CI coverage
+- ENV overrides for all adapters in test helpers; improved DB bootstrap in specs
+- Documentation site via GitHub Pages
 
 ## Next steps
 
