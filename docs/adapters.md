@@ -32,12 +32,9 @@ All adapters support the same modes, which you declare via the values in your `l
 Example:
 
 ```ruby
-filter_map do
-  like title: :circumfix
-  nested :author do
-    like first_name: :prefix
-  end
-end
+# Declare modes via like-mapping values (no block DSL)
+like title: :circumfix
+like author: { first_name: :prefix }
 ```
 
 When you pass an array of terms, Rokaki composes adapter‑appropriate SQL that matches any of the terms.
