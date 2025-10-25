@@ -32,27 +32,33 @@ bundle install
 
 ## Quick start
 
-Declare a filter map on your ActiveRecord model and compose filters.
+Use `Rokaki::FilterModel` and declare mappings with method arguments (no block DSL).
 
 ```ruby
-class Article < ActiveRecord::Base
-  include Rokaki::Filterable
+class ArticleQuery
+  include Rokaki::FilterModel
 
-  filter_map do
-    like title: :circumfix
-    like :content, key: :q
-    nested :author do
-      like :first_name
-      like :last_name
-    end
+  # Tell Rokaki which model to query and which DB adapter semantics to use
+  filter_model :article, db: :postgres # or :mysql, :sqlserver
+
+  # Map a single query key (:q) to multiple LIKE targets on Article
+  define_query_key :q
+  like title: :circumfix, content: :circumfix
+
+  # Nested LIKEs on associated models are expressed with hashes
+  like author: { first_name: :prefix, last_name: :suffix }
+
+  attr_accessor :filters
+  def initialize(filters: {})
+    @filters = filters
   end
 end
 
 # In a controller/service:
-filtered = Article.filter(params)
+filtered = ArticleQuery.new(filters: params).results
 ```
 
-Where `params` can include keys like `title`, `q`, `author_first_name`, etc. The LIKE mode for each key is defined in your `like` mapping (e.g., `title: :circumfix`), and Rokaki builds the appropriate `WHERE` clauses safely and adapter‑aware.
+Where `params` can include keys like `q`, `author_first_name`, `author_last_name`, etc. The LIKE mode for each key is defined in your `like` mapping (e.g., `title: :circumfix`), and Rokaki builds the appropriate `WHERE` clauses safely and adapter‑aware.
 
 ## Matching modes
 

@@ -3,6 +3,7 @@ require_relative 'model_filter_map_spec'
 require_relative 'filter_model/basic_filter_spec'
 require_relative 'filter_model/like_keys_spec'
 require_relative 'filter_model/nested_filter_spec'
+require_relative 'filter_model/filter_map_block_spec'
 
 require 'support/database_manager'
 
@@ -18,4 +19,5 @@ RSpec.describe "Postgres" do
   include_examples "FilterModel::BasicFilter", db
   include_examples "FilterModel::NestedFilter", db
   include_examples "FilterModel::LikeKeys", db
+  include_examples "FilterModel::FilterMapBlockDSL", db
 end

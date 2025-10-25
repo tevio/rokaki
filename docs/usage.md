@@ -27,24 +27,19 @@ class Author < ActiveRecord::Base
   has_many :articles
 end
 
-class Article < ActiveRecord::Base
-  include Rokaki::Filterable
+class ArticleQuery
+  include Rokaki::FilterModel
   belongs_to :author
 
-  filter_map do
-    # Simple LIKE filters
-    like title: :circumfix
-    like :content, key: :q
+  # Choose model and adapter
+  filter_model :article, db: :postgres # or :mysql, :sqlserver
 
-    # Boolean or exact filters can go through custom blocks or other helpers
-    # eq :status
+  # Map a single query key (:q) to multiple LIKE targets
+  define_query_key :q
+  like title: :circumfix, content: :circumfix
 
-    # Nested filters on associations
-    nested :author do
-      like :first_name
-      like :last_name
-    end
-  end
+  # Nested LIKEs via hash mapping (no block DSL)
+  like author: { first_name: :prefix, last_name: :suffix }
 end
 ```
 
