@@ -134,6 +134,10 @@ module Rokaki
                 "def filter_a_b_c_d;" \
                   "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY :query\", query: \"%\#{a_b_c_d}%\");" \
                   " end;"
+              elsif selected_db == :sqlserver
+                "def filter_a_b_c_d;" \
+                  "sqlserver_like(@model.joins(a: { b: :c }), \"cs.d\", \"LIKE\", a_b_c_d, :circumfix);" \
+                  " end;"
               end
             end
 
@@ -168,6 +172,10 @@ module Rokaki
                 when :mysql
                   "def _filter__a__b__c__d;" \
                     "@model.joins(a: { b: :c }).where(\"cs.d LIKE BINARY :query\", query: \"%\#{_a__b__c__d}%\");" \
+                    " end;"
+                when :sqlserver
+                  "def _filter__a__b__c__d;" \
+                    "sqlserver_like(@model.joins(a: { b: :c }), \"cs.d\", \"LIKE\", _a__b__c__d, :circumfix);" \
                     " end;"
                 end
               end

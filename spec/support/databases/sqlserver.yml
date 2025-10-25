@@ -1,0 +1,10 @@
+# Default SQL Server test configuration. You can override any of these via ENV variables:
+# SQLSERVER_HOST, SQLSERVER_PORT, SQLSERVER_USERNAME, SQLSERVER_PASSWORD, SQLSERVER_DATABASE
+adapter: sqlserver
+host: localhost
+port: 1433
+username: sa
+password: 5QL5£rv£r
+database: rokaki
+timeout: 5000
+azure: false

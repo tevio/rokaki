@@ -38,6 +38,10 @@ module Rokaki
           'LIKE'
         elsif db == :mysql
           'LIKE BINARY'
+        elsif db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 
@@ -45,6 +49,10 @@ module Rokaki
         if db == :postgres
           'ILIKE'
         elsif db == :mysql
+          'LIKE'
+        elsif db == :sqlserver
+          'LIKE'
+        else
           'LIKE'
         end
       end
@@ -94,6 +102,9 @@ module Rokaki
         if db == :postgres
           query = "@model.where(\"#{key} #{type} ANY (ARRAY[?])\", "
           query += "prepare_terms(#{filter}, :#{mode}))"
+        elsif db == :sqlserver
+          # Delegate to helper that supports arrays and escaping with ESCAPE
+          query = "sqlserver_like(@model, \"#{key}\", \"#{type}\", #{filter}, :#{mode})"
         else
           query = "@model.where(\"#{key} #{type} :query\", "
           query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix

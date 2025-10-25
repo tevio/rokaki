@@ -19,6 +19,56 @@ module Rokaki
       end
     end
 
+    # Escape special LIKE characters in SQL Server patterns: %, _, [ and \\
+    def escape_like(term)
+      term.to_s.gsub(/[\\%_\[]/) { |m| "\\#{m}" }
+    end
+
+    # Build LIKE patterns with proper prefix/suffix/circumfix and escaping for SQL Server
+    # Returns a String when param is scalar, or an Array of Strings when param is an Array
+    def prepare_like_terms(param, mode)
+      if Array === param
+        case mode
+        when :circumfix
+          param.map { |t| "%#{escape_like(t)}%" }
+        when :prefix
+          param.map { |t| "%#{escape_like(t)}" }
+        when :suffix
+          param.map { |t| "#{escape_like(t)}%" }
+        else
+          param.map { |t| "%#{escape_like(t)}%" }
+        end
+      else
+        case mode
+        when :circumfix
+          "%#{escape_like(param)}%"
+        when :prefix
+          "%#{escape_like(param)}"
+        when :suffix
+          "#{escape_like(param)}%"
+        else
+          "%#{escape_like(param)}%"
+        end
+      end
+    end
+
+    # Compose a SQL Server LIKE relation supporting arrays of terms (OR chained)
+    # column should be a fully qualified column expression, e.g., "authors.first_name" or "cs.title"
+    # type is usually "LIKE"
+    def sqlserver_like(model, column, type, value, mode)
+      terms = prepare_like_terms(value, mode)
+      if terms.is_a?(Array)
+        return model.none if terms.empty?
+        rel = model.where("#{column} #{type} :q0 ESCAPE '\\'", q0: terms[0])
+        terms[1..-1]&.each_with_index do |t, i|
+          rel = rel.or(model.where("#{column} #{type} :q#{i + 1} ESCAPE '\\'", "q#{i + 1}".to_sym => t))
+        end
+        rel
+      else
+        model.where("#{column} #{type} :q ESCAPE '\\'", q: terms)
+      end
+    end
+
     def prepare_regex_terms(param, mode)
       if Array === param
         param_map = param.map { |term| ".*#{term}.*" } if mode == :circumfix
@@ -187,6 +237,10 @@ module Rokaki
         elsif @_filter_db == :mysql
           # 'LIKE BINARY'
           'REGEXP'
+        elsif @_filter_db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 
@@ -196,6 +250,10 @@ module Rokaki
         elsif @_filter_db == :mysql
           # 'LIKE'
           'REGEXP'
+        elsif @_filter_db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 

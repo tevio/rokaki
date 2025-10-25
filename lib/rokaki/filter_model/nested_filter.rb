@@ -70,6 +70,10 @@ module Rokaki
           'LIKE'
         elsif db == :mysql
           'LIKE BINARY'
+        elsif db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 
@@ -77,6 +81,10 @@ module Rokaki
         if db == :postgres
           'ILIKE'
         elsif db == :mysql
+          'LIKE'
+        elsif db == :sqlserver
+          'LIKE'
+        else
           'LIKE'
         end
       end
@@ -131,19 +139,27 @@ module Rokaki
         where = where.join
 
         if search_mode
-          query = build_like_query(
-            type: type,
-            query: '',
-            filter: "#{prefix}#{name}",
-            search_mode: search_mode,
-            key: keys.last.to_s.pluralize,
-            leaf: leaf
-          )
+          if db == :sqlserver
+            key_leaf = "#{keys.last.to_s.pluralize}.#{leaf}"
+            @filter_methods << "def #{prefix}filter#{infix}#{name};"\
+              "sqlserver_like(@model.joins(#{joins}), \"#{key_leaf}\", \"#{type}\", #{prefix}#{name}, :#{search_mode}); end;"
 
-          @filter_methods << "def #{prefix}filter#{infix}#{name};"\
-            "@model.joins(#{joins}).#{query}; end;"
+            @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
+          else
+            query = build_like_query(
+              type: type,
+              query: '',
+              filter: "#{prefix}#{name}",
+              search_mode: search_mode,
+              key: keys.last.to_s.pluralize,
+              leaf: leaf
+            )
 
-          @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
+            @filter_methods << "def #{prefix}filter#{infix}#{name};"\
+              "@model.joins(#{joins}).#{query}; end;"
+
+            @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
+          end
         else
           @filter_methods << "def #{prefix}filter#{infix}#{name};"\
             "@model.joins(#{joins}).where(#{where}); end;"
