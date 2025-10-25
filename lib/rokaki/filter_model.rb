@@ -69,6 +69,27 @@ module Rokaki
       end
     end
 
+    # Compose an Oracle LIKE relation supporting arrays of terms and case-insensitive path via UPPER()
+    # type_signal: 'LIKE' for case-sensitive semantics; 'ILIKE' to indicate case-insensitive (we will translate)
+    def oracle_like(model, column, type_signal, value, mode)
+      terms = prepare_like_terms(value, mode)
+      ci = (type_signal.to_s.upcase == 'ILIKE')
+      col_expr = ci ? "UPPER(#{column})" : column
+      build_term = proc { |t| ci ? t.to_s.upcase : t }
+
+      if terms.is_a?(Array)
+        return model.none if terms.empty?
+        first = build_term.call(terms[0])
+        rel = model.where("#{col_expr} LIKE :q0 ESCAPE '\\'", q0: first)
+        terms[1..-1]&.each_with_index do |t, i|
+          rel = rel.or(model.where("#{col_expr} LIKE :q#{i + 1} ESCAPE '\\'", "q#{i + 1}".to_sym => build_term.call(t)))
+        end
+        rel
+      else
+        model.where("#{col_expr} LIKE :q ESCAPE '\\'", q: build_term.call(terms))
+      end
+    end
+
     def prepare_regex_terms(param, mode)
       if Array === param
         param_map = param.map { |term| ".*#{term}.*" } if mode == :circumfix
@@ -327,6 +348,8 @@ module Rokaki
           'REGEXP'
         elsif @_filter_db == :sqlserver
           'LIKE'
+        elsif @_filter_db == :oracle
+          'LIKE'
         else
           'LIKE'
         end
@@ -340,6 +363,9 @@ module Rokaki
           'REGEXP'
         elsif @_filter_db == :sqlserver
           'LIKE'
+        elsif @_filter_db == :oracle
+          # Use 'ILIKE' as a signal for case-insensitive; oracle_like will translate to UPPER(column) LIKE UPPER(:q)
+          'ILIKE'
         else
           'LIKE'
         end
