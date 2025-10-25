@@ -8,7 +8,29 @@ class DatabaseManager
   end
 
   def establish
-    ActiveRecord::Base.establish_connection(@database_config)
+    if @database_config['adapter'] == 'sqlserver'
+      begin
+        require 'tiny_tds'
+      rescue LoadError
+        warn "tiny_tds gem not available; ensure it's in your bundle"
+      end
+      begin
+        require 'activerecord-sqlserver-adapter'
+      rescue LoadError
+        warn "activerecord-sqlserver-adapter gem not available; ensure it's in your bundle"
+      end
+      # Always ensure target database exists by using master connection first
+      dbname = @database_config['database']
+      master_config = @database_config.merge('database' => 'master')
+      ActiveRecord::Base.establish_connection(master_config)
+      ActiveRecord::Base.connection.execute("IF DB_ID(N'#{dbname}') IS NULL CREATE DATABASE [#{dbname}]")
+      # Now connect to target DB
+      ActiveRecord::Base.establish_connection(@database_config)
+      # Touch connection
+      ActiveRecord::Base.connection
+    else
+      ActiveRecord::Base.establish_connection(@database_config)
+    end
   end
 
   def define_schema

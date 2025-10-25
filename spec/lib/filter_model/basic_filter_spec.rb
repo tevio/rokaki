@@ -58,7 +58,7 @@ module Rokaki
               when :mysql
                 "def filter_a;@model.where(\"a LIKE BINARY :query\", query: \"%\#{a}\") end;"
               when :sqlserver
-                "def filter_a;@model.where(\"a LIKE :query\", query: \"%\#{a}\") end;"
+                "def filter_a;sqlserver_like(@model, \"a\", \"LIKE\", a, :prefix) end;"
               end
             end
 

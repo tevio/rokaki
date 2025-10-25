@@ -13,6 +13,9 @@ GEM
       activemodel (= 8.0.3)
       activesupport (= 8.0.3)
       timeout (>= 0.4.0)
+    activerecord-sqlserver-adapter (8.0.9)
+      activerecord (~> 8.0.0)
+      tiny_tds
     activesupport (8.0.3)
       base64
       benchmark (>= 0.3)
@@ -132,6 +135,16 @@ GEM
     sqlite3 (2.7.4-x86_64-linux-musl)
     thor (1.4.0)
     timeout (0.4.3)
+    tiny_tds (3.3.0)
+      bigdecimal (~> 3)
+    tiny_tds (3.3.0-aarch64-linux-gnu)
+      bigdecimal (~> 3)
+    tiny_tds (3.3.0-aarch64-linux-musl)
+      bigdecimal (~> 3)
+    tiny_tds (3.3.0-x86_64-linux-gnu)
+      bigdecimal (~> 3)
+    tiny_tds (3.3.0-x86_64-linux-musl)
+      bigdecimal (~> 3)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     uri (1.0.3)
@@ -152,6 +165,7 @@ PLATFORMS
 
 DEPENDENCIES
   activerecord
+  activerecord-sqlserver-adapter
   bundler (~> 2.0)
   database_cleaner-active_record
   factory_bot
@@ -165,6 +179,7 @@ DEPENDENCIES
   rokaki!
   rspec (~> 3.0)
   sqlite3
+  tiny_tds
 
 BUNDLED WITH
    2.5.3

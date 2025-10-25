@@ -194,22 +194,37 @@ module Rokaki
         leaf = nil
         leaf = keys.pop
 
+        # Compute key_leaf (qualified column) like other branches
+        key_leaf = keys.last ? "#{keys.last.to_s.pluralize}.#{leaf}" : leaf
 
-        query = build_like_query(
-          type: type,
-          query: '',
-          filter: filter_name,
-          search_mode: search_mode,
-          key: keys.last,
-          leaf: leaf
-        )
+        if db == :sqlserver
+          # Build relation base with joins
+          if join_map.empty?
+            rel_expr = "@model"
+          elsif join_map.is_a?(Array)
+            rel_expr = "@model.joins(*#{join_map})"
+          else
+            rel_expr = "@model.joins(**#{join_map})"
+          end
 
-        if join_map.empty?
-          filter_query = "@model.#{query}"
-        elsif join_map.is_a?(Array)
-          filter_query = "@model.joins(*#{join_map}).#{query}"
+          filter_query = "sqlserver_like(#{rel_expr}, \"#{key_leaf}\", \"#{type.to_s.upcase}\", #{filter_name}, :#{search_mode})"
         else
-          filter_query = "@model.joins(**#{join_map}).#{query}"
+          query = build_like_query(
+            type: type,
+            query: '',
+            filter: filter_name,
+            search_mode: search_mode,
+            key: keys.last,
+            leaf: leaf
+          )
+
+          if join_map.empty?
+            filter_query = "@model.#{query}"
+          elsif join_map.is_a?(Array)
+            filter_query = "@model.joins(*#{join_map}).#{query}"
+          else
+            filter_query = "@model.joins(**#{join_map}).#{query}"
+          end
         end
 
         if mode == or_key

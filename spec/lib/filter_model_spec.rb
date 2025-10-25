@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'spec_helper'
-require 'support/active_record_setup'
+require 'support/active_record_setup' unless ENV['DB_AWARE'] == 'true'
 
 module Rokaki
   RSpec.shared_examples "FilterModel" do |selected_db|

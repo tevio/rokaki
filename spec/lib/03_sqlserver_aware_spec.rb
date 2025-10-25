@@ -1,3 +1,4 @@
+ENV['DB_AWARE'] = 'true'
 require_relative 'filter_model_spec'
 require_relative 'model_filter_map_spec'
 require_relative 'filter_model/basic_filter_spec'
