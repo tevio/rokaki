@@ -1,0 +1,22 @@
+title: Rokaki
+description: A DSL for filtering data in web requests (ActiveRecord)
+baseurl: ""
+url: ""
+theme: minima
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+
+# Exclude existing generated RDoc folder from site
+exclude:
+  - doc/
+  - pkg/
+  - spec/
+  - Gemfile
+  - Gemfile.lock
+  - Rakefile
+  - rokaki.gemspec
+  - Guardfile
+  - README.md
