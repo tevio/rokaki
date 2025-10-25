@@ -39,7 +39,7 @@ class Article < ActiveRecord::Base
   include Rokaki::Filterable
 
   filter_map do
-    like :title, modes: %i[prefix suffix circumfix]
+    like title: :circumfix
     like :content, key: :q
     nested :author do
       like :first_name
@@ -52,7 +52,7 @@ end
 filtered = Article.filter(params)
 ```
 
-Where `params` can include keys like `title_prefix`, `title_suffix`, `title_circumfix`, `q`, `author_first_name`, etc. Rokaki builds the appropriate `WHERE` clauses safely and adapter‑aware.
+Where `params` can include keys like `title`, `q`, `author_first_name`, etc. The LIKE mode for each key is defined in your `like` mapping (e.g., `title: :circumfix`), and Rokaki builds the appropriate `WHERE` clauses safely and adapter‑aware.
 
 ## Matching modes
 
