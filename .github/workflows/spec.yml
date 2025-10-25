@@ -56,26 +56,20 @@ jobs:
           ruby-version: 3.3.0
           bundler-cache: false # we'll run bundle after Instant Client is present
 
-      - name: Extract Oracle Client headers and libs from container
+      - name: Install Oracle Instant Client (ZIP Basic Lite + SDK)
         run: |
-          sudo mkdir -p /opt/oracle/ic-server
-          # Copy client libs and SDK headers from the Oracle service container
-          docker cp ${{ job.services.oracle.id }}:/opt/oracle/product/23ai/dbhomeFree/lib /opt/oracle/ic-server/lib
-          docker cp ${{ job.services.oracle.id }}:/opt/oracle/product/23ai/dbhomeFree/sdk /opt/oracle/ic-server/sdk || true
-          # Fallback: some images place headers under rdbms/public; copy if SDK is unavailable
-          if [ ! -d "/opt/oracle/ic-server/sdk/include" ]; then
-            docker cp ${{ job.services.oracle.id }}:/opt/oracle/product/23ai/dbhomeFree/rdbms/public /opt/oracle/ic-server/sdk 2>/dev/null || true
-          fi
-          OCI_DIR=/opt/oracle/ic-server
-          echo "OCI_DIR=$OCI_DIR" | sudo tee -a $GITHUB_ENV
-          echo "OCI_LIB_DIR=$OCI_DIR/lib" | sudo tee -a $GITHUB_ENV
-          # Prefer SDK include if present; otherwise use rdbms/public
-          if [ -d "$OCI_DIR/sdk/include" ]; then
-            echo "OCI_INC_DIR=$OCI_DIR/sdk/include" | sudo tee -a $GITHUB_ENV
-          else
-            echo "OCI_INC_DIR=$OCI_DIR/sdk" | sudo tee -a $GITHUB_ENV
-          fi
-          echo "LD_LIBRARY_PATH=$OCI_DIR/lib:$LD_LIBRARY_PATH" | sudo tee -a $GITHUB_ENV
+          set -e
+          sudo mkdir -p /opt/oracle && cd /opt/oracle
+          # Download current 23.5 ZIPs directly from Oracle
+          curl -fL -o ic-basic.zip https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linuxx64.zip
+          curl -fL -o ic-sdk.zip    https://download.oracle.com/otn_software/linux/instantclient/23.9.0.0.0/instantclient-sdk-linux.x64-23.9.0.0.0.zip
+          sudo unzip -q ic-basic.zip
+          sudo unzip -q ic-sdk.zip
+          IC_DIR=/opt/oracle/instantclient_23_5
+          echo "OCI_DIR=$IC_DIR" | sudo tee -a $GITHUB_ENV
+          echo "OCI_LIB_DIR=$IC_DIR" | sudo tee -a $GITHUB_ENV
+          echo "OCI_INC_DIR=$IC_DIR/sdk/include" | sudo tee -a $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$IC_DIR:$LD_LIBRARY_PATH" | sudo tee -a $GITHUB_ENV
 
       - name: Bundle install (after Instant Client)
         env:
