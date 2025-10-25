@@ -40,6 +40,8 @@ module Rokaki
           'LIKE BINARY'
         elsif db == :sqlserver
           'LIKE'
+        elsif db == :oracle
+          'LIKE'
         else
           'LIKE'
         end
@@ -52,6 +54,9 @@ module Rokaki
           'LIKE'
         elsif db == :sqlserver
           'LIKE'
+        elsif db == :oracle
+          # Use 'ILIKE' as a signal; oracle_like will translate to UPPER(column) LIKE UPPER(:q)
+          'ILIKE'
         else
           'LIKE'
         end
@@ -105,6 +110,9 @@ module Rokaki
         elsif db == :sqlserver
           # Delegate to helper that supports arrays and escaping with ESCAPE
           query = "sqlserver_like(@model, \"#{key}\", \"#{type}\", #{filter}, :#{mode})"
+        elsif db == :oracle
+          # Oracle helper handles case-insensitive via UPPER() when type is 'ILIKE'
+          query = "oracle_like(@model, \"#{key}\", \"#{type}\", #{filter}, :#{mode})"
         else
           query = "@model.where(\"#{key} #{type} :query\", "
           query += "query: \"%\#{#{filter}}%\")" if mode == :circumfix

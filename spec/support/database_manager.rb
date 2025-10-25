@@ -24,6 +24,14 @@ class DatabaseManager
       @database_config['username'] = ENV['POSTGRES_USERNAME'] if ENV['POSTGRES_USERNAME']
       @database_config['password'] = ENV['POSTGRES_PASSWORD'] if ENV['POSTGRES_PASSWORD']
       @database_config['database'] = ENV['POSTGRES_DATABASE'] if ENV['POSTGRES_DATABASE']
+    when 'oracle_enhanced'
+      # Oracle ENV overrides (service name or database/tns alias)
+      @database_config['host'] = ENV['ORACLE_HOST'] if ENV['ORACLE_HOST']
+      @database_config['port'] = ENV['ORACLE_PORT'].to_i if ENV['ORACLE_PORT']
+      @database_config['username'] = ENV['ORACLE_USERNAME'] if ENV['ORACLE_USERNAME']
+      @database_config['password'] = ENV['ORACLE_PASSWORD'] if ENV['ORACLE_PASSWORD']
+      @database_config['database'] = ENV['ORACLE_DATABASE'] if ENV['ORACLE_DATABASE']
+      @database_config['service_name'] = ENV['ORACLE_SERVICE_NAME'] if ENV['ORACLE_SERVICE_NAME']
     end
     # p @database_config
   end
@@ -46,6 +54,32 @@ class DatabaseManager
       master_config = @database_config.merge('database' => 'master')
       ActiveRecord::Base.establish_connection(master_config)
       ActiveRecord::Base.connection.execute("IF DB_ID(N'#{dbname}') IS NULL CREATE DATABASE [#{dbname}]")
+      ActiveRecord::Base.establish_connection(@database_config)
+      ActiveRecord::Base.connection # touch
+    when 'oracle_enhanced'
+      begin
+        # ruby-oci8 is required via 'oci8'
+        require 'oci8'
+      rescue LoadError
+        warn "ruby-oci8 gem not available; ensure it's in your bundle"
+      end
+      begin
+        require 'active_record/connection_adapters/oracle_enhanced_adapter'
+      rescue LoadError
+        warn "activerecord-oracle_enhanced-adapter gem not available; ensure it's in your bundle"
+      end
+      # Build a proper Oracle connection string if only service_name is provided
+      db = @database_config
+      if db['database'].nil? && db['service_name']
+        host = db['host'] || 'localhost'
+        port = db['port'] || 1521
+        service = (db['service_name'] || '').to_s
+        # Prefer a full descriptor to avoid EZCONNECT quirks and service registration edge cases
+        db['database'] = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=#{host})(PORT=#{port}))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=#{service.downcase})))"
+      end
+      # Set a sane default to avoid US7ASCII fallback warnings
+      ENV['NLS_LANG'] ||= 'AL32UTF8'
+      # For Oracle we assume the user/schema exists and we create tables in the current schema
       ActiveRecord::Base.establish_connection(@database_config)
       ActiveRecord::Base.connection # touch
     when 'postgresql'

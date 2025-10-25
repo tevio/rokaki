@@ -35,21 +35,67 @@ jobs:
           - 1433:1433
         # No built-in healthcheck; we'll wait in a step using nc
 
+      oracle:
+        image: gvenzl/oracle-free:23-slim
+        env:
+          ORACLE_PASSWORD: "oracle"
+          APP_USER: ROKAKI
+          APP_USER_PASSWORD: rokaki
+        ports:
+          - 1521:1521
+
     steps:
       - uses: actions/checkout@v2
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libpq-dev default-libmysqlclient-dev freetds-dev netcat-openbsd
+          sudo apt-get install -y build-essential libpq-dev default-libmysqlclient-dev freetds-dev netcat-openbsd unzip curl libaio1t64 libaio-dev
+          sudo ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/lib/x86_64-linux-gnu/libaio.so.1
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          # Not needed with a .ruby-version file
           ruby-version: 3.3.0
-          # runs 'bundle install' and caches installed gems automatically
-          bundler-cache: true
+          bundler-cache: false # we'll run bundle after Instant Client is present
+
+      - name: Install Oracle Instant Client (ZIP Basic Lite + SDK)
+        run: |
+          set -e
+          sudo mkdir -p /opt/oracle && cd /opt/oracle
+          # Download current 23.5 ZIPs directly from Oracle
+          curl -fL -o ic-basic.zip https://download.oracle.com/otn_software/linux/instantclient/2326000/instantclient-basic-linux.x64-23.26.0.0.0.zip
+          curl -fL -o ic-sdk.zip https://download.oracle.com/otn_software/linux/instantclient/2326000/instantclient-sdk-linux.x64-23.26.0.0.0.zip
+          sudo unzip -q -o ic-basic.zip
+          sudo unzip -q -o ic-sdk.zip
+          ls /opt/oracle
+          cd /opt/oracle/instantclient_23_26 && sudo ln -s ../instantclient_23_26 lib
+          cd /opt/oracle/instantclient_23_26 && sudo ln -s sdk/include include
+          IC_DIR=/opt/oracle/instantclient_23_26
+          echo "OCI_DIR=$IC_DIR" | sudo tee -a $GITHUB_ENV
+          echo "OCI_LIB_DIR=$IC_DIR" | sudo tee -a $GITHUB_ENV
+          echo "OCI_INC_DIR=$IC_DIR/sdk/include" | sudo tee -a $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$IC_DIR:$LD_LIBRARY_PATH" | sudo tee -a $GITHUB_ENV
+
+      - name: Bundle install (after Instant Client)
+        id: bundleInstallAfterInstantClient
+        env:
+          ORACLE_HOME: /opt/oracle/instantclient_23_26
+          OCI_DIR: ${{ env.OCI_DIR }}
+          OCI_LIB_DIR: ${{ env.OCI_LIB_DIR }}
+          OCI_INC_DIR: ${{ env.OCI_INC_DIR }}
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
+        run: |
+          ls /opt/oracle/instantclient_23_26
+          bundle config set build.ruby-oci8 "--with-instant-client-dir=/opt/oracle/instantclient_23_26 --with-instant-client-include=/opt/oracle/instantclient_23_26/sdk/include --with-instant-client-lib=/opt/oracle/instantclient_23_26"
+          bundle install --jobs 4 --retry 3
+
+      - name: Archive Build Artifact
+        if: failure() && steps.bundleInstallAfterInstantClient.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-mkmf-log
+          path: /opt/hostedtoolcache/Ruby/3.3.0/x64/lib/ruby/gems/3.3.0/extensions/x86_64-linux/3.3.0/ruby-oci8-2.2.14/mkmf.log
 
       - name: Wait for databases to be ready
         shell: bash
@@ -63,7 +109,24 @@ jobs:
           for i in {1..120}; do
             nc -z 127.0.0.1 1433 && echo "SQL Server up" && break || sleep 1
           done
+          for i in {1..180}; do
+            nc -z 127.0.0.1 1521 && echo "Oracle up" && break || sleep 1
+          done
 
       - name: Run tests
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: postgres
+          SQLSERVER_HOST: 127.0.0.1
+          SQLSERVER_PORT: 1433
+          SQLSERVER_USERNAME: sa
+          SQLSERVER_PASSWORD: 5QL5£rv£r
+          ORACLE_HOST: 127.0.0.1
+          ORACLE_PORT: 1521
+          ORACLE_DATABASE: /freepdb1
+          ORACLE_USERNAME: ROKAKI
+          ORACLE_PASSWORD: rokaki
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
         run: |
           ./spec/ordered_run.sh

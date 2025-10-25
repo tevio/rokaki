@@ -138,6 +138,10 @@ module Rokaki
                 "def filter_a_b_c_d;" \
                   "sqlserver_like(@model.joins(a: { b: :c }), \"cs.d\", \"LIKE\", a_b_c_d, :circumfix);" \
                   " end;"
+              elsif selected_db == :oracle
+                "def filter_a_b_c_d;" \
+                  "oracle_like(@model.joins(a: { b: :c }), \"cs.d\", \"LIKE\", a_b_c_d, :circumfix);" \
+                  " end;"
               end
             end
 
@@ -176,6 +180,10 @@ module Rokaki
                 when :sqlserver
                   "def _filter__a__b__c__d;" \
                     "sqlserver_like(@model.joins(a: { b: :c }), \"cs.d\", \"LIKE\", _a__b__c__d, :circumfix);" \
+                    " end;"
+                when :oracle
+                  "def _filter__a__b__c__d;" \
+                    "oracle_like(@model.joins(a: { b: :c }), \"cs.d\", \"LIKE\", _a__b__c__d, :circumfix);" \
                     " end;"
                 end
               end

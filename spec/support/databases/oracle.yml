@@ -1,0 +1,9 @@
+# Default Oracle test configuration. Override via ENV (ORACLE_HOST, ORACLE_PORT, ORACLE_USERNAME, ORACLE_PASSWORD, ORACLE_DATABASE, ORACLE_SERVICE_NAME).
+adapter: oracle_enhanced
+host: localhost
+port: 1521
+# Use either `database` (tns alias) or `service_name` (common for XE/Free images)
+# database: XEPDB1
+service_name: FREEPDB1
+username: ROKAKI
+password: rokaki

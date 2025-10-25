@@ -77,7 +77,7 @@ module Rokaki
         @filter_key_prefix ||= prefix
       end
 
-      def filter_key_infix(infix = :_)
+      def filter_key_infix(infix = :__)
         @filter_key_infix ||= infix
       end
 
@@ -170,6 +170,8 @@ module Rokaki
       # Enhance `filters` to support block mode accumulation
       def filters(*filter_keys)
         if instance_variable_defined?(:@__in_filterable_block) && @__in_filterable_block
+          @__block_filters ||= []
+          @__ctx_stack ||= []
           filter_keys.each do |fk|
             @__block_filters << wrap_in_context(fk)
           end

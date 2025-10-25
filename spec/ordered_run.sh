@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-for f in spec/lib/01_postgres_aware_spec.rb spec/lib/02_mysql_aware_spec.rb spec/lib/03_sqlserver_aware_spec.rb
-do
-  bundle exec rspec $f
+FILES="spec/lib/01_postgres_aware_spec.rb spec/lib/02_mysql_aware_spec.rb spec/lib/03_sqlserver_aware_spec.rb spec/lib/04_oracle_aware_spec.rb"
+
+for f in $FILES; do
+  bundle exec rspec "$f"
 done

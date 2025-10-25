@@ -197,7 +197,7 @@ module Rokaki
         # Compute key_leaf (qualified column) like other branches
         key_leaf = keys.last ? "#{keys.last.to_s.pluralize}.#{leaf}" : leaf
 
-        if db == :sqlserver
+        if db == :sqlserver || db == :oracle
           # Build relation base with joins
           if join_map.empty?
             rel_expr = "@model"
@@ -207,7 +207,11 @@ module Rokaki
             rel_expr = "@model.joins(**#{join_map})"
           end
 
-          filter_query = "sqlserver_like(#{rel_expr}, \"#{key_leaf}\", \"#{type.to_s.upcase}\", #{filter_name}, :#{search_mode})"
+          if db == :sqlserver
+            filter_query = "sqlserver_like(#{rel_expr}, \"#{key_leaf}\", \"#{type.to_s.upcase}\", #{filter_name}, :#{search_mode})"
+          else
+            filter_query = "oracle_like(#{rel_expr}, \"#{key_leaf}\", \"#{type.to_s.upcase}\", #{filter_name}, :#{search_mode})"
+          end
         else
           query = build_like_query(
             type: type,

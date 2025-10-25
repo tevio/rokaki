@@ -139,10 +139,11 @@ module Rokaki
         where = where.join
 
         if search_mode
-          if db == :sqlserver
+          if db == :sqlserver || db == :oracle
             key_leaf = "#{keys.last.to_s.pluralize}.#{leaf}"
+            helper = db == :sqlserver ? 'sqlserver_like' : 'oracle_like'
             @filter_methods << "def #{prefix}filter#{infix}#{name};"\
-              "sqlserver_like(@model.joins(#{joins}), \"#{key_leaf}\", \"#{type}\", #{prefix}#{name}, :#{search_mode}); end;"
+              "#{helper}(@model.joins(#{joins}), \"#{key_leaf}\", \"#{type}\", #{prefix}#{name}, :#{search_mode}); end;"
 
             @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
           else

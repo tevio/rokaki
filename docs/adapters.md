@@ -4,7 +4,7 @@ title: Database adapters
 permalink: /adapters
 ---
 
-Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, and SQL Server.
+Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, and Oracle.
 
 ## Overview
 
