@@ -4,6 +4,27 @@ require 'active_record'
 class DatabaseManager
   def initialize(database)
     @database_config = YAML.load(File.read("./spec/support/databases/#{database}.yml"))
+    # Allow environment overrides to avoid hardcoding ports/hosts across adapters
+    case @database_config['adapter']
+    when 'sqlserver'
+      @database_config['host'] = ENV['SQLSERVER_HOST'] if ENV['SQLSERVER_HOST']
+      @database_config['port'] = ENV['SQLSERVER_PORT'].to_i if ENV['SQLSERVER_PORT']
+      @database_config['username'] = ENV['SQLSERVER_USERNAME'] if ENV['SQLSERVER_USERNAME']
+      @database_config['password'] = ENV['SQLSERVER_PASSWORD'] if ENV['SQLSERVER_PASSWORD']
+      @database_config['database'] = ENV['SQLSERVER_DATABASE'] if ENV['SQLSERVER_DATABASE']
+    when 'mysql2'
+      @database_config['host'] = ENV['MYSQL_HOST'] if ENV['MYSQL_HOST']
+      @database_config['port'] = ENV['MYSQL_PORT'].to_i if ENV['MYSQL_PORT']
+      @database_config['username'] = ENV['MYSQL_USERNAME'] if ENV['MYSQL_USERNAME']
+      @database_config['password'] = ENV['MYSQL_PASSWORD'] if ENV['MYSQL_PASSWORD']
+      @database_config['database'] = ENV['MYSQL_DATABASE'] if ENV['MYSQL_DATABASE']
+    when 'postgresql'
+      @database_config['host'] = ENV['POSTGRES_HOST'] if ENV['POSTGRES_HOST']
+      @database_config['port'] = ENV['POSTGRES_PORT'].to_i if ENV['POSTGRES_PORT']
+      @database_config['username'] = ENV['POSTGRES_USERNAME'] if ENV['POSTGRES_USERNAME']
+      @database_config['password'] = ENV['POSTGRES_PASSWORD'] if ENV['POSTGRES_PASSWORD']
+      @database_config['database'] = ENV['POSTGRES_DATABASE'] if ENV['POSTGRES_DATABASE']
+    end
     # p @database_config
   end
 
