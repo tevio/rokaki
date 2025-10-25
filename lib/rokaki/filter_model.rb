@@ -187,6 +187,10 @@ module Rokaki
         elsif @_filter_db == :mysql
           # 'LIKE BINARY'
           'REGEXP'
+        elsif @_filter_db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 
@@ -196,6 +200,10 @@ module Rokaki
         elsif @_filter_db == :mysql
           # 'LIKE'
           'REGEXP'
+        elsif @_filter_db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 

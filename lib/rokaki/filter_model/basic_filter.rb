@@ -38,6 +38,10 @@ module Rokaki
           'LIKE'
         elsif db == :mysql
           'LIKE BINARY'
+        elsif db == :sqlserver
+          'LIKE'
+        else
+          'LIKE'
         end
       end
 
@@ -45,6 +49,10 @@ module Rokaki
         if db == :postgres
           'ILIKE'
         elsif db == :mysql
+          'LIKE'
+        elsif db == :sqlserver
+          'LIKE'
+        else
           'LIKE'
         end
       end

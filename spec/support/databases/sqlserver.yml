@@ -1,0 +1,8 @@
+adapter: sqlserver
+host: 127.0.0.1
+port: 1433
+username: sa
+password: <YourStrong!Passw0rd>
+database: rokaki
+timeout: 5000
+azure: false

@@ -57,6 +57,8 @@ module Rokaki
                 "def filter_a;@model.where(\"a LIKE ANY (ARRAY[?])\", prepare_terms(a, :prefix)) end;"
               when :mysql
                 "def filter_a;@model.where(\"a LIKE BINARY :query\", query: \"%\#{a}\") end;"
+              when :sqlserver
+                "def filter_a;@model.where(\"a LIKE :query\", query: \"%\#{a}\") end;"
               end
             end
 

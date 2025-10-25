@@ -47,5 +47,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'mysql2'
   spec.add_development_dependency 'sqlite3'
   spec.add_development_dependency 'database_cleaner-active_record'
+  # For SQL Server testing
+  spec.add_development_dependency 'tiny_tds'
+  spec.add_development_dependency 'activerecord-sqlserver-adapter'
 
 end

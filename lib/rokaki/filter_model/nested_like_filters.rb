@@ -225,9 +225,20 @@ module Rokaki
         if db == :postgres
           query = "where(\"#{key_leaf} #{type.to_s.upcase} ANY (ARRAY[?])\", "
           query += "prepare_terms(#{filter}, :#{search_mode}))"
-        else
+        elsif db == :mysql
           query = "where(\"#{key_leaf} #{type.to_s.upcase} :query\", "
           query += "query: prepare_regex_terms(#{filter}, :#{search_mode}))"
+        else # :sqlserver and others
+          query = "where(\"#{key_leaf} #{type.to_s.upcase} :query\", "
+          if search_mode == :circumfix
+            query += "query: \"%\#{#{filter}}%\")"
+          elsif search_mode == :prefix
+            query += "query: \"%\#{#{filter}}\")"
+          elsif search_mode == :suffix
+            query += "query: \"\#{#{filter}}%\")"
+          else
+            query += "query: \"%\#{#{filter}}%\")"
+          end
         end
 
         query

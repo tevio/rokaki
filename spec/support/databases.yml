@@ -2,4 +2,5 @@ supported:
   - postgresql
   - mysql
   - sqlite
+  - sqlserver
 
