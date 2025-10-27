@@ -1,3 +1,7 @@
+### Unreleased
+- Documentation: Added backend auto‑detection feature docs across README and site (index, usage, adapters, configuration). Examples now prefer auto‑detection by default and explain explicit overrides and ambiguity errors.
+- Tests: Added shared examples to exercise auto‑detection behavior under each adapter suite.
+
 ### 0.15.0 — 2025-10-27
 - Add first-class SQLite support: adapter-aware LIKE behavior with OR expansion for arrays.
 - Added SQLite badge in README.

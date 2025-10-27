@@ -16,6 +16,7 @@ Rokaki is a small DSL for building safe, composable filters for ActiveRecord que
 - Works with ActiveRecord 7.1 and 8.x
 - LIKE modes: `:prefix`, `:suffix`, `:circumfix` (+ synonyms) and array‑of‑terms
 - Nested filters with auto‑joins and qualified columns
+- Auto‑detects the database backend; specify `db:` only when your app uses multiple adapters or you need an override
 - Block‑form DSL (`filter_map do ... end`) and classic argument form
 - Runtime usage: build an anonymous filter class from a payload (no predeclared class needed)
 
