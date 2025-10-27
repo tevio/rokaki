@@ -31,8 +31,9 @@ class ArticleQuery
   include Rokaki::FilterModel
   belongs_to :author
 
-  # Choose model and adapter
-  filter_model :article, db: :postgres # or :mysql, :sqlserver, :oracle, :sqlite
+  # Choose model; adapter is auto-detected from the model's connection.
+  # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+  filter_model :article
 
   # Map a single query key (:q) to multiple LIKE targets
   define_query_key :q
@@ -112,8 +113,9 @@ Rokaki also supports a block-form DSL that is equivalent to the argument-based f
 class ArticleQuery
   include Rokaki::FilterModel
 
-  # Choose model and adapter
-  filter_model :article, db: :postgres # or :mysql, :sqlserver
+  # Choose model; adapter is auto-detected from the model's connection.
+  # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+  filter_model :article
 
   # Declare a single query key used by all LIKE/equality filters below
   define_query_key :q
@@ -188,6 +190,59 @@ Tips:
 - Inside the block, `nested :association` affects all `filters` declared within it.
 
 
+## Backend auto-detection
+
+By default, Rokaki auto-detects which database adapter to use from your model’s ActiveRecord connection. This means you usually don’t need to pass `db:` explicitly.
+
+- Single-adapter apps: No configuration needed — Rokaki infers the adapter from the model connection.
+- Multi-adapter apps: If more than one adapter is detected in the process, Rokaki raises a clear error asking you to declare which backend to use.
+- Explicit override: You can always specify `db:` on `filter_model` or call `filter_db` later.
+
+Examples:
+
+```ruby
+class ArticleQuery
+  include Rokaki::FilterModel
+
+  # Adapter auto-detected (recommended default)
+  filter_model :article
+  define_query_key :q
+
+  filter_map do
+    like title: :circumfix
+  end
+end
+```
+
+Explicit selection/override:
+
+```ruby
+class ArticleQuery
+  include Rokaki::FilterModel
+
+  # Option A: choose upfront
+  filter_model :article, db: :postgres
+
+  # Option B: or set it later
+  # filter_model :article
+  # filter_db :sqlite
+end
+```
+
+Ambiguity behavior (apps with multiple adapters):
+
+- If Rokaki sees multiple adapters in use and you haven’t specified one, it raises:
+
+```
+Rokaki::Error: Multiple database adapters detected (...). Please declare which backend to use via db: or filter_db.
+```
+
+- If it cannot detect any adapter at all, it raises:
+
+```
+Rokaki::Error: Unable to auto-detect database adapter. Ensure your model is connected or pass db: explicitly.
+```
+
 ## Dynamic runtime listener (no code changes needed)
 
 You can construct a Rokaki filter class at runtime from a payload (e.g., JSON → Hash) and use it immediately — no prior class is required. Rokaki will compile the tiny class on the fly and generate the methods once.
@@ -197,7 +252,7 @@ You can construct a Rokaki filter class at runtime from a payload (e.g., JSON �
 # Example payload (e.g., parsed JSON)
 payload = {
   model: :article,
-  db: :postgres,        # or :mysql, :sqlserver, :oracle
+  db: :postgres,        # optional; or :mysql, :sqlserver, :oracle, :sqlite
   query_key: :q,        # the key in params with search term(s)
   like: {               # like mappings (deeply nested allowed)
     title: :circumfix,

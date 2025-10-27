@@ -52,6 +52,16 @@ When you pass an array of terms, Rokaki composes adapter‑appropriate SQL that 
 - SQL Server: The server/database/column collation determines sensitivity. Rokaki currently defers to your DB’s default. If you need deterministic behavior regardless of DB defaults, consider using a case‑sensitive collation on the column or open an issue to discuss inline `COLLATE` options.
 
 
+## Backend auto-detection
+
+Rokaki auto-detects the adapter from your model’s ActiveRecord connection in typical single-adapter apps. If multiple adapters are detected in the process and you do not specify one, Rokaki raises a helpful error asking you to choose.
+
+- Default: no `db:` needed; the adapter is inferred from the model connection.
+- Multiple adapters present: pass `db:` to `filter_model` (or call `filter_db`) to select one explicitly.
+- Errors you may see:
+  - `Rokaki::Error: Multiple database adapters detected (...). Please declare which backend to use via db: or filter_db.`
+  - `Rokaki::Error: Unable to auto-detect database adapter. Ensure your model is connected or pass db: explicitly.`
+
 ## SQLite
 
 SQLite is embedded and requires no separate server process. Rokaki treats it as a first-class adapter.

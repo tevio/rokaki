@@ -42,6 +42,16 @@ Rokaki's test helpers (used in the specs) support environment variable overrides
 ### SQLite
 - `SQLITE_DATABASE` (path to a SQLite file; if unset, tests use an in-memory DB via `":memory:"`)
 
+## Backend auto-detection
+
+By default, Rokaki infers the database adapter from your model’s ActiveRecord connection.
+
+- Single-adapter apps: no `db:` needed.
+- Multiple adapters present: pass `db:` to `filter_model` (or call `filter_db`) to choose explicitly.
+- Errors:
+  - `Rokaki::Error: Multiple database adapters detected (...). Please declare which backend to use via db: or filter_db.`
+  - `Rokaki::Error: Unable to auto-detect database adapter. Ensure your model is connected or pass db: explicitly.`
+
 ## SQL Server notes
 
 - Rokaki uses `LIKE` with proper escaping and OR expansion for arrays of terms.

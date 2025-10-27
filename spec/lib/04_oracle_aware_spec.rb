@@ -8,6 +8,7 @@ require_relative 'filter_model/filter_map_block_spec'
 require_relative 'filter_model/affix_synonyms_spec'
 require_relative 'dynamic_listener_spec'
 require_relative 'filterable_block_spec'
+require_relative 'auto_detect_backend_shared_examples'
 
 require 'support/database_manager'
 # Ensure Oracle adapter is registered before attempting to establish connection

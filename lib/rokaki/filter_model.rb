@@ -159,6 +159,89 @@ module Rokaki
         end
       end
 
+      # Map AR adapter names to internal symbols
+      def map_adapter_name(name)
+        n = name.to_s.downcase
+        case n
+        when 'postgresql', 'postgres', 'postgis'
+          :postgres
+        when 'mysql2', 'mysql'
+          :mysql
+        when 'sqlite3', 'sqlite'
+          :sqlite
+        when 'sqlserver'
+          :sqlserver
+        when 'oracle_enhanced', 'oracle'
+          :oracle
+        else
+          nil
+        end
+      end
+
+      # Try to detect adapter from a model's connection
+      def detect_adapter_from_model(model)
+        return nil unless model
+        begin
+          adapter = model.connection_db_config&.adapter
+          return map_adapter_name(adapter) if adapter
+        rescue StandardError
+          # fall through
+        end
+        begin
+          adapter = model.connection&.adapter_name
+          return map_adapter_name(adapter)
+        rescue StandardError
+          nil
+        end
+      end
+
+      # Scan known AR models to see how many adapters are in use
+      def adapters_in_use
+        adapters = []
+        begin
+          bases = [::ActiveRecord::Base] + (::ActiveRecord::Base.descendants rescue [])
+          bases.uniq.each do |k|
+            next unless k.respond_to?(:connection_db_config)
+            begin
+              a = k.connection_db_config&.adapter
+              adapters << a if a
+            rescue StandardError
+              # ignore not connected models
+            end
+          end
+        rescue StandardError
+          # ignore
+        end
+        adapters.compact.map { |a| map_adapter_name(a) }.compact.uniq
+      end
+
+      # Determine @_filter_db or raise if ambiguous in multi-adapter apps
+      def resolve_filter_db!(model: @model, explicit: nil)
+        if explicit
+          @_filter_db = explicit
+          return @_filter_db
+        end
+        # Prefer model-specific detection
+        detected = detect_adapter_from_model(model)
+        return (@_filter_db = detected) if detected
+
+        # Fallback to a single global adapter if unambiguous
+        used = adapters_in_use
+        if used.size == 1
+          @_filter_db = used.first
+        elsif used.size > 1
+          raise ::Rokaki::Error, "Multiple database adapters detected (#{used.join(', ')}). Please declare which backend to use via db: or filter_db."
+        else
+          # As a last resort, try ActiveRecord::Base connection
+          begin
+            base_detected = map_adapter_name(::ActiveRecord::Base.connection_db_config&.adapter)
+            return (@_filter_db = base_detected) if base_detected
+          rescue StandardError
+          end
+          raise ::Rokaki::Error, "Unable to auto-detect database adapter. Ensure your model is connected or pass db: explicitly."
+        end
+      end
+
       # Merge two nested like/ilike mappings
       def deep_merge_like(a, b)
         return b if a.nil? || a == {}
@@ -196,7 +279,7 @@ module Rokaki
         if block_given? && args.empty?
           raise ArgumentError, 'define_query_key must be called before block filter_map' unless @filter_map_query_key
           raise ArgumentError, 'filter_model must be called before block filter_map' unless @model
-          @_filter_db ||= :postgres
+          resolve_filter_db!(model: @model)
 
           # Enter block-collection mode
           @__in_filter_map_block = true
@@ -228,22 +311,22 @@ module Rokaki
         filter_model(model)
         @filter_map_query_key = query_key
 
-        @_filter_db = options[:db] || :postgres
-        @_filter_mode = options[:mode] || :and
-        like(options[:like]) if options[:like]
-        ilike(options[:ilike]) if options[:ilike]
-        filters(*options[:match]) if options[:match]
+        resolve_filter_db!(model: @model, explicit: options && options[:db])
+        @_filter_mode = (options && options[:mode]) || :and
+        like(options[:like]) if options && options[:like]
+        ilike(options[:ilike]) if options && options[:ilike]
+        filters(*options[:match]) if options && options[:match]
       end
 
       def filter(model, options)
         filter_model(model)
         @filter_map_query_key = nil
 
-        @_filter_db = options[:db] || :postgres
-        @_filter_mode = options[:mode] || :and
-        like(options[:like]) if options[:like]
-        ilike(options[:ilike]) if options[:ilike]
-        filters(*options[:match]) if options[:match]
+        resolve_filter_db!(model: @model, explicit: options && options[:db])
+        @_filter_mode = (options && options[:mode]) || :and
+        like(options[:like]) if options && options[:like]
+        ilike(options[:ilike]) if options && options[:ilike]
+        filters(*options[:match]) if options && options[:match]
       end
 
       def filters(*filter_keys)
@@ -353,9 +436,10 @@ module Rokaki
       end
 
       def filter_model(model_class, db: nil)
-        @_filter_db = db if db
         @model = (model_class.is_a?(Class) ? model_class : Object.const_get(model_class.capitalize))
         class_eval "def set_model; @model ||= #{@model}; end;"
+        # Only resolve here if an explicit db is provided; otherwise defer to callers
+        resolve_filter_db!(model: @model, explicit: db) if db
       end
 
       def case_sensitive

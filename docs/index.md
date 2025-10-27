@@ -10,6 +10,7 @@ Rokaki is a small Ruby library that helps you build safe, composable filters for
 - Supports simple and nested filters
 - LIKE-based matching with prefix/suffix/circumfix modes (circumfix also accepts synonyms: parafix, confix, ambifix)
 - Array-of-terms matching (adapter-aware)
+- Auto-detects the database backend; specify db only when your app uses multiple adapters or you need an override
 
 Get started below or jump to:
 - [Usage](./usage)
@@ -40,8 +41,9 @@ Argument-based form:
 class ArticleQuery
   include Rokaki::FilterModel
 
-  # Tell Rokaki which model to query and which DB adapter semantics to use
-  filter_model :article, db: :postgres # or :mysql, :sqlserver, :oracle, :sqlite
+  # Tell Rokaki which model to query. Adapter is auto-detected from the connection.
+  # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+  filter_model :article
 
   # Map a single query key (:q) to multiple LIKE targets on Article
   define_query_key :q
@@ -66,7 +68,9 @@ Block-form DSL (same behavior):
 class ArticleQuery
   include Rokaki::FilterModel
 
-  filter_model :article, db: :postgres # or :mysql, :sqlserver
+  # Adapter is auto-detected from the connection by default.
+  # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+  filter_model :article
   define_query_key :q
 
   filter_map do
