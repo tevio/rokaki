@@ -38,10 +38,6 @@ Tip: For a dynamic runtime listener (build a filter class from a JSON/hash paylo
 
 ---
 
-<<<<<<< HEAD
-To use the DSL first include the `Rokaki::Filterable` module in your class.
-=======
 ## Further reading
->>>>>>> c188dc7 (update documentation and dynamic testing)
 
 [Legacy README](README.legacy.md)
