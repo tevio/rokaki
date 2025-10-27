@@ -31,6 +31,17 @@ Rokaki's test helpers (used in the specs) support environment variable overrides
 - `POSTGRES_PASSWORD` (default: `postgres`)
 - `POSTGRES_DATABASE` (default: `rokaki`)
 
+### Oracle
+- `ORACLE_HOST` (default: `127.0.0.1`)
+- `ORACLE_PORT` (default: `1521`)
+- `ORACLE_USERNAME` (default: `ROKAKI`)
+- `ORACLE_PASSWORD` (default: `rokaki`)
+- `ORACLE_DATABASE` (service/alias; default: `/freepdb1` in CI)
+- `ORACLE_SERVICE_NAME` (optional; if set, Rokaki builds a full descriptor string)
+
+### SQLite
+- `SQLITE_DATABASE` (path to a SQLite file; if unset, tests use an in-memory DB via `":memory:"`)
+
 ## SQL Server notes
 
 - Rokaki uses `LIKE` with proper escaping and OR expansion for arrays of terms.
@@ -60,4 +71,4 @@ bundle exec rspec spec/lib/03_sqlserver_aware_spec.rb
 
 ## GitHub Actions
 
-The repository includes CI that starts MySQL (9.4), PostgreSQL (13), and SQL Server (2022) services and runs the ordered spec suite. See `.github/workflows/spec.yml`.
+The repository includes CI that starts MySQL (9.4), PostgreSQL (13), SQL Server (2022), and Oracle (23 Free) services and runs the ordered spec suite. SQLite is embedded and requires no service container. See `.github/workflows/spec.yml`.

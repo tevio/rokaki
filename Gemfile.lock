@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rokaki (0.14.0)
+    rokaki (0.15.0)
       activesupport
 
 GEM

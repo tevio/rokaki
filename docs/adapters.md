@@ -4,7 +4,7 @@ title: Database adapters
 permalink: /adapters
 ---
 
-Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, and Oracle.
+Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle, and SQLite.
 
 ## Overview
 
@@ -20,6 +20,12 @@ Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, and Orac
   - Uses `LIKE` with safe escaping
   - Multi‑term input expands to OR‑chained predicates (e.g., `(col LIKE :q0 OR col LIKE :q1 ...)`) with `ESCAPE '\\'`
   - Case sensitivity follows DB collation by default; future versions may add inline `COLLATE` options
+- Oracle
+  - Uses `LIKE`; arrays of terms are OR‑chained; case‑insensitive paths use `UPPER(column) LIKE UPPER(:q)`
+- SQLite
+  - Embedded (no separate server needed)
+  - Uses `LIKE`; arrays of terms are OR‑chained across predicates
+  - Case sensitivity follows SQLite defaults (generally case‑sensitive for ASCII)
 
 ## LIKE modes
 
@@ -44,3 +50,21 @@ When you pass an array of terms, Rokaki composes adapter‑appropriate SQL that 
 - PostgreSQL: `ILIKE` is case‑insensitive; `LIKE` is case‑sensitive depending on collation/LC settings but generally treated as case‑sensitive for ASCII.
 - MySQL: `LIKE` case sensitivity depends on column collation; `LIKE BINARY` forces byte comparison (case‑sensitive for ASCII).
 - SQL Server: The server/database/column collation determines sensitivity. Rokaki currently defers to your DB’s default. If you need deterministic behavior regardless of DB defaults, consider using a case‑sensitive collation on the column or open an issue to discuss inline `COLLATE` options.
+
+
+## SQLite
+
+SQLite is embedded and requires no separate server process. Rokaki treats it as a first-class adapter.
+
+- Default test configuration uses an in-memory database.
+- Arrays of terms in LIKE filters are OR-chained across predicates.
+- Case sensitivity follows SQLite defaults (generally case-sensitive for ASCII); collations can affect this.
+
+Example config (tests):
+
+```yaml
+adapter: sqlite3
+database: ":memory:"
+```
+
+To persist a database file locally, set `SQLITE_DATABASE` to a path (e.g., `tmp/test.sqlite3`).
