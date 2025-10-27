@@ -1,0 +1,31 @@
+<nav class="lang-switcher" aria-label="Language">
+  <style>
+    .lang-switcher { margin: 0.5rem 0 1.25rem; font-size: 0.9rem; }
+    .lang-switcher a { margin-right: 0.5rem; text-decoration: none; }
+    .lang-switcher .active { font-weight: 600; }
+    .lang-switcher .sep { color: #999; margin: 0 0.3rem; }
+  </style>
+  {% assign current_lang = page.lang | default: site.active_lang | default: site.default_lang %}
+  {% assign clean_url = page.url %}
+  {% if current_lang and current_lang != site.default_lang %}
+    {% assign prefix = '/' | append: current_lang %}
+    {% assign clean_url = page.url | remove_first: prefix %}
+  {% endif %}
+  {% if clean_url == '' %}{% assign clean_url = '/' %}{% endif %}
+
+  {% assign langs = site.languages | default: 'en,ja' | split: ',' %}
+  <span>Language:</span>
+  {% for lang in langs %}
+    {% assign target = site.baseurl %}
+    {% if lang != site.default_lang %}
+      {% assign target = target | append: '/' | append: lang %}
+    {% endif %}
+    {% assign target = target | append: clean_url %}
+    {% if lang == current_lang %}
+      <span class="active">{{ lang }}</span>
+    {% else %}
+      <a href="{{ target }}">{{ lang }}</a>
+    {% endif %}
+    {% unless forloop.last %}<span class="sep">|</span>{% endunless %}
+  {% endfor %}
+</nav>

@@ -7,6 +7,9 @@ gem "jekyll", "~> 4.4"
 # Theme used by docs/_config.yml
 gem "minima", "~> 2.5"
 
+# Multi-language support for Jekyll
+gem "jekyll-polyglot", "~> 1.8"
+
 # GitHub-flavored Markdown support
 gem "kramdown-parser-gfm", "~> 1.1"
 

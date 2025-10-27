@@ -44,7 +44,8 @@ ROOT = File.expand_path('..', __dir__)
 DOCS_DIR = File.join(ROOT, 'docs')
 I18N_EN_DIR = File.join(ROOT, 'i18n', 'src', 'en')
 I18N_LOCALES_DIR = File.join(ROOT, 'i18n', 'locales')
-OUT_BASE = File.join(ROOT, 'docs', '_i18n')
+I18N_SRC_DIR     = File.join(ROOT, 'i18n', 'src')
+OUT_BASE = File.join(ROOT, 'docs')
 DEFAULT_PAGES = %w[index usage adapters configuration]
 
 # Simple counter registry for deterministic keys
@@ -124,9 +125,19 @@ class Compiler
     end
     out = normalize_spacing(out)
 
-    # Reattach front matter unchanged
+    # Reattach front matter with locale adjustments for non-English pages
     if fm
-      "#{fm}#{out}"
+      fm_yaml = fm.sub(/^---\n/, '').sub(/\n---\n\n\z/, '')
+      data = YAML.safe_load(fm_yaml) || {}
+      if @locale && @locale != 'en'
+        data['lang'] = @locale
+        # Avoid forcing root permalink from English on localized pages
+        data.delete('permalink')
+      else
+        data['lang'] ||= 'en'
+      end
+      fm_rebuilt = "---\n" + data.to_yaml + "---\n\n"
+      fm_rebuilt + out
     else
       out
     end
@@ -153,9 +164,17 @@ class Compiler
   end
 
   def load_locale_map(page, locale)
-    ypath = File.join(I18N_LOCALES_DIR, locale, "#{page}.yml")
-    data = File.exist?(ypath) ? YAML.load_file(ypath) : {}
-    # Locale files use the locale code as root; if absent, try 'en' for fallback shape
+    # Prefer pulled catalogs under i18n/locales/<locale>/<page>.yml, then fall back to i18n/src/<locale>/<page>.yml
+    y_locales = File.join(I18N_LOCALES_DIR, locale, "#{page}.yml")
+    y_src     = File.join(I18N_SRC_DIR,     locale, "#{page}.yml")
+    path = if File.exist?(y_locales)
+             y_locales
+           elsif File.exist?(y_src)
+             y_src
+           else
+             nil
+           end
+    data = path ? YAML.load_file(path) : {}
     if data.is_a?(Hash)
       data[locale] || data['en'] || {}
     else
@@ -379,11 +398,21 @@ pages = ARGV.empty? ? DEFAULT_PAGES : ARGV.map { |p| p.sub(/\.md\z/, '') }
 locales = if options[:locales]&.any?
             options[:locales]
           else
-            Dir.exist?(I18N_LOCALES_DIR) ? Dir.children(I18N_LOCALES_DIR).select { |d| File.directory?(File.join(I18N_LOCALES_DIR, d)) } : []
+            locs = []
+            if Dir.exist?(I18N_LOCALES_DIR)
+              locs += Dir.children(I18N_LOCALES_DIR).select { |d| File.directory?(File.join(I18N_LOCALES_DIR, d)) }
+            end
+            if Dir.exist?(I18N_SRC_DIR)
+              locs += Dir.children(I18N_SRC_DIR).select { |d| File.directory?(File.join(I18N_SRC_DIR, d)) }
+            end
+            locs.uniq
           end
 
+# Remove English; we only compile non-default locales
+locales = locales.reject { |c| c == 'en' }
+
 if locales.empty?
-  warn '[md-compile] No locales found under i18n/locales; nothing to compile.'
+  warn '[md-compile] No non-English locales found under i18n/locales or i18n/src; nothing to compile.'
   exit 0
 end
 

@@ -13,6 +13,21 @@ markdown: kramdown
 kramdown:
   input: GFM
 
+# i18n (jekyll-polyglot)
+plugins:
+  - jekyll-polyglot
+languages: ["en", "ja"]
+default_lang: "en"
+# Do not create localized copies of assets or non-content folders
+exclude_from_localization:
+  - assets
+  - images
+  - css
+  - js
+  - doc
+  - pkg
+  - spec
+
 # Exclude existing generated RDoc folder from site
 exclude:
   - doc/
