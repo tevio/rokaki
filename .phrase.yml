@@ -1,0 +1,34 @@
+# Phrase CLI configuration (push-only)
+# Uses YAML catalogs under i18n/src as the source of truth.
+# Authentication is provided via the PHRASE_ACCESS_TOKEN environment variable in CI.
+# Optionally set PHRASE_API_HOST (e.g., https://api.phrase.com or https://api.eu.phrase.com)
+# in the GitHub Actions environment; the workflow will pass it via --host.
+
+phrase:
+  # Main file format for our catalogs
+  file_format: yml
+
+  # Project ID in Phrase (public UUID). Update if your project changes.
+  # You can find it in Phrase → Project → Settings → API → Project ID.
+  project_id: 60bafc9e7c0eba56c3278bd72d348fd3
+
+  push:
+    sources:
+      # English source catalogs extracted from docs into i18n/src/en/*.yml
+      # Each source is tagged to make it easier to filter in Phrase (optional for push-only).
+      - file: i18n/src/en/index.yml
+        params:
+          locale_id: en
+          tags: doc:index, docs, site
+      - file: i18n/src/en/usage.yml
+        params:
+          locale_id: en
+          tags: doc:usage, docs, site
+      - file: i18n/src/en/adapters.yml
+        params:
+          locale_id: en
+          tags: doc:adapters, docs, site
+      - file: i18n/src/en/configuration.yml
+        params:
+          locale_id: en
+          tags: doc:configuration, docs, site

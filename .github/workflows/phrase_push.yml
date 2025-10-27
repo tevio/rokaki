@@ -1,0 +1,52 @@
+name: Push docs i18n catalogs to Phrase
+
+on:
+  push:
+    paths:
+      - '.phrase.yml'
+      - 'docs/*.md'
+      - 'i18n/src/**'
+  workflow_dispatch: {}
+
+jobs:
+  phrase-push:
+    runs-on: ubuntu-latest
+    # No write permissions required for push-only
+    permissions:
+      contents: read
+    env:
+      PHRASE_ACCESS_TOKEN: ${{ secrets.PHRASE_ACCESS_TOKEN }}
+      # Optional; defaults to api.phrase.com when unset
+      PHRASE_API_HOST: ${{ secrets.PHRASE_API_HOST }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler: '2.5.3'
+
+      - name: Install docs dependencies
+        working-directory: docs
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Extract English YAML catalogs from Markdown
+        run: |
+          set -euo pipefail
+          BUNDLE_GEMFILE=docs/Gemfile bundle exec ruby scripts/md_extract_yml_locale.rb
+
+      - name: Setup Phrase CLI
+        uses: phrase/setup-cli@v1
+        with:
+          version: '2.50.0'
+
+      - name: Verify Phrase CLI
+        run: phrase version
+
+      - name: Push English YAML catalogs to Phrase
+        run: |
+          set -euo pipefail
+          echo "Pushing catalogs with default Phrase host"
+          phrase push --wait --config .phrase.yml

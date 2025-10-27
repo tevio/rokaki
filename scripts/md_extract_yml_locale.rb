@@ -9,7 +9,7 @@
 # image alt texts as separate keys.
 #
 # Usage:
-#   ruby scripts/md_extract_front_matter.rb [page ...]
+#   ruby scripts/md_extract_yml_locale.rb [page ...]
 #   # If no pages are given, defaults to docs/index.md, usage.md, adapters.md, configuration.md
 #
 # Output:
@@ -26,7 +26,7 @@ begin
   require 'kramdown'
   require 'kramdown-parser-gfm'
 rescue LoadError => e
-  warn "Missing kramdown dependencies. Please run: (cd docs && bundle install)\n  And execute with: BUNDLE_GEMFILE=docs/Gemfile bundle exec ruby scripts/md_extract_front_matter.rb"
+  warn "Missing kramdown dependencies. Please run: (cd docs && bundle install)\n  And execute with: BUNDLE_GEMFILE=docs/Gemfile bundle exec ruby scripts/md_extract_yml_locale.rb"
   raise
 end
 

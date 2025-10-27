@@ -1,5 +1,5 @@
 ---
-body:
+en:
   p_001: Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle,
     and SQLite.
   h2_001: Overview

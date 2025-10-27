@@ -1,5 +1,5 @@
 ---
-body:
+en:
   p_001: This page covers configuration, environment overrides, and tips for running
     the test suite across adapters.
   h2_001: Environment variables

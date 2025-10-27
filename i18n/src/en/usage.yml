@@ -1,5 +1,5 @@
 ---
-body:
+en:
   p_001: This page shows how to use Rokaki to define filters and apply them to ActiveRecord
     relations.
   h2_001: Installation
