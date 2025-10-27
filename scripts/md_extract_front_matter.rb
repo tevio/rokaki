@@ -346,9 +346,9 @@ pages.each do |page|
   map = extractor.extract
 
   yml_path = File.join(I18N_EN_DIR, File.basename(md_path, '.md') + '.yml')
-  # Write with stable key order
+  # Write with stable key order and single root key 'body'
   File.open(yml_path, 'w', encoding: 'UTF-8') do |f|
-    f.write(map.to_yaml)
+    f.write({ 'body' => map }.to_yaml)
   end
-  puts "[md-extract] Wrote #{yml_path} (#{map.size} keys)"
+  puts "[md-extract] Wrote #{yml_path} (#{map.size} keys under body)"
 end

@@ -1,116 +1,117 @@
 ---
-p_001: Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle,
-  and SQLite.
-h2_001: Overview
-ul_001:
-  li_001:
-    text: PostgreSQL
-    ul_001:
-      li_001:
-        text: 'Case‑insensitive: `ILIKE`'
-      li_002:
-        text: 'Case‑sensitive: `LIKE`'
-      li_003:
-        text: 'Multi‑term: `ANY (ARRAY[...])`'
-  li_002:
-    text: MySQL
-    ul_001:
-      li_001:
-        text: 'Case‑insensitive: `LIKE`'
-      li_002:
-        text: 'Case‑sensitive: `LIKE BINARY`'
-      li_003:
-        text: Nested‑like filters may use `REGEXP` where designed in the library
-  li_003:
-    text: SQL Server
-    ul_001:
-      li_001:
-        text: Uses `LIKE` with safe escaping
-      li_002:
-        text: Multi‑term input expands to OR‑chained predicates (e.g., `(col LIKE
-          :q0 OR col LIKE :q1 ...)`) with `ESCAPE '\\'`
-      li_003:
-        text: Case sensitivity follows DB collation by default; future versions may
-          add inline `COLLATE` options
-  li_004:
-    text: Oracle
-    ul_001:
-      li_001:
-        text: Uses `LIKE`; arrays of terms are OR‑chained; case‑insensitive paths
-          use `UPPER(column) LIKE UPPER(:q)`
-  li_005:
-    text: SQLite
-    ul_001:
-      li_001:
-        text: Embedded (no separate server needed)
-      li_002:
-        text: Uses `LIKE`; arrays of terms are OR‑chained across predicates
-      li_003:
-        text: Case sensitivity follows SQLite defaults (generally case‑sensitive for
-          ASCII)
-h2_002: LIKE modes
-p_002: 'All adapters support the same modes, which you declare via the values in your
-  `like` mapping (there is no `modes:` option):'
-ul_002:
-  li_001:
-    text: "`prefix` → `%term`"
-  li_002:
-    text: "`suffix` → `term%`"
-  li_003:
-    text: "`circumfix` → `%term%` (synonyms supported: `:parafix`, `:confix`, `:ambifix`)"
-p_003: 'Example:'
-code_001: |-
-  # Declare modes via like-mapping values (no block DSL)
-  like title: :circumfix
-  like author: { first_name: :prefix }
-p_004: When you pass an array of terms, Rokaki composes adapter‑appropriate SQL that
-  matches any of the terms.
-h2_003: Notes on case sensitivity
-ul_003:
-  li_001:
-    text: 'PostgreSQL: `ILIKE` is case‑insensitive; `LIKE` is case‑sensitive depending
-      on collation/LC settings but generally treated as case‑sensitive for ASCII.'
-  li_002:
-    text: 'MySQL: `LIKE` case sensitivity depends on column collation; `LIKE BINARY`
-      forces byte comparison (case‑sensitive for ASCII).'
-  li_003:
-    text: 'SQL Server: The server/database/column collation determines sensitivity.
-      Rokaki currently defers to your DB’s default. If you need deterministic behavior
-      regardless of DB defaults, consider using a case‑sensitive collation on the
-      column or open an issue to discuss inline `COLLATE` options.'
-h2_004: Backend auto-detection
-p_005: Rokaki auto-detects the adapter from your model’s ActiveRecord connection in
-  typical single-adapter apps. If multiple adapters are detected in the process and
-  you do not specify one, Rokaki raises a helpful error asking you to choose.
-ul_004:
-  li_001:
-    text: 'Default: no `db:` needed; the adapter is inferred from the model connection.'
-  li_002:
-    text: 'Multiple adapters present: pass `db:` to `filter_model` (or call `filter_db`)
-      to select one explicitly.'
-  li_003:
-    text: 'Errors you may see:'
-    ul_001:
-      li_001:
-        text: "`Rokaki::Error: Multiple database adapters detected (...). Please declare
-          which backend to use via db: or filter_db.`"
-      li_002:
-        text: "`Rokaki::Error: Unable to auto-detect database adapter. Ensure your
-          model is connected or pass db: explicitly.`"
-h2_005: SQLite
-p_006: SQLite is embedded and requires no separate server process. Rokaki treats it
-  as a first-class adapter.
-ul_005:
-  li_001:
-    text: Default test configuration uses an in-memory database.
-  li_002:
-    text: Arrays of terms in LIKE filters are OR-chained across predicates.
-  li_003:
-    text: Case sensitivity follows SQLite defaults (generally case-sensitive for ASCII);
-      collations can affect this.
-p_007: 'Example config (tests):'
-code_002: |-
-  adapter: sqlite3
-  database: ":memory:"
-p_008: To persist a database file locally, set `SQLITE_DATABASE` to a path (e.g.,
-  `tmp/test.sqlite3`).
+body:
+  p_001: Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle,
+    and SQLite.
+  h2_001: Overview
+  ul_001:
+    li_001:
+      text: PostgreSQL
+      ul_001:
+        li_001:
+          text: 'Case‑insensitive: `ILIKE`'
+        li_002:
+          text: 'Case‑sensitive: `LIKE`'
+        li_003:
+          text: 'Multi‑term: `ANY (ARRAY[...])`'
+    li_002:
+      text: MySQL
+      ul_001:
+        li_001:
+          text: 'Case‑insensitive: `LIKE`'
+        li_002:
+          text: 'Case‑sensitive: `LIKE BINARY`'
+        li_003:
+          text: Nested‑like filters may use `REGEXP` where designed in the library
+    li_003:
+      text: SQL Server
+      ul_001:
+        li_001:
+          text: Uses `LIKE` with safe escaping
+        li_002:
+          text: Multi‑term input expands to OR‑chained predicates (e.g., `(col LIKE
+            :q0 OR col LIKE :q1 ...)`) with `ESCAPE '\\'`
+        li_003:
+          text: Case sensitivity follows DB collation by default; future versions
+            may add inline `COLLATE` options
+    li_004:
+      text: Oracle
+      ul_001:
+        li_001:
+          text: Uses `LIKE`; arrays of terms are OR‑chained; case‑insensitive paths
+            use `UPPER(column) LIKE UPPER(:q)`
+    li_005:
+      text: SQLite
+      ul_001:
+        li_001:
+          text: Embedded (no separate server needed)
+        li_002:
+          text: Uses `LIKE`; arrays of terms are OR‑chained across predicates
+        li_003:
+          text: Case sensitivity follows SQLite defaults (generally case‑sensitive
+            for ASCII)
+  h2_002: LIKE modes
+  p_002: 'All adapters support the same modes, which you declare via the values in
+    your `like` mapping (there is no `modes:` option):'
+  ul_002:
+    li_001:
+      text: "`prefix` → `%term`"
+    li_002:
+      text: "`suffix` → `term%`"
+    li_003:
+      text: "`circumfix` → `%term%` (synonyms supported: `:parafix`, `:confix`, `:ambifix`)"
+  p_003: 'Example:'
+  code_001: |-
+    # Declare modes via like-mapping values (no block DSL)
+    like title: :circumfix
+    like author: { first_name: :prefix }
+  p_004: When you pass an array of terms, Rokaki composes adapter‑appropriate SQL
+    that matches any of the terms.
+  h2_003: Notes on case sensitivity
+  ul_003:
+    li_001:
+      text: 'PostgreSQL: `ILIKE` is case‑insensitive; `LIKE` is case‑sensitive depending
+        on collation/LC settings but generally treated as case‑sensitive for ASCII.'
+    li_002:
+      text: 'MySQL: `LIKE` case sensitivity depends on column collation; `LIKE BINARY`
+        forces byte comparison (case‑sensitive for ASCII).'
+    li_003:
+      text: 'SQL Server: The server/database/column collation determines sensitivity.
+        Rokaki currently defers to your DB’s default. If you need deterministic behavior
+        regardless of DB defaults, consider using a case‑sensitive collation on the
+        column or open an issue to discuss inline `COLLATE` options.'
+  h2_004: Backend auto-detection
+  p_005: Rokaki auto-detects the adapter from your model’s ActiveRecord connection
+    in typical single-adapter apps. If multiple adapters are detected in the process
+    and you do not specify one, Rokaki raises a helpful error asking you to choose.
+  ul_004:
+    li_001:
+      text: 'Default: no `db:` needed; the adapter is inferred from the model connection.'
+    li_002:
+      text: 'Multiple adapters present: pass `db:` to `filter_model` (or call `filter_db`)
+        to select one explicitly.'
+    li_003:
+      text: 'Errors you may see:'
+      ul_001:
+        li_001:
+          text: "`Rokaki::Error: Multiple database adapters detected (...). Please
+            declare which backend to use via db: or filter_db.`"
+        li_002:
+          text: "`Rokaki::Error: Unable to auto-detect database adapter. Ensure your
+            model is connected or pass db: explicitly.`"
+  h2_005: SQLite
+  p_006: SQLite is embedded and requires no separate server process. Rokaki treats
+    it as a first-class adapter.
+  ul_005:
+    li_001:
+      text: Default test configuration uses an in-memory database.
+    li_002:
+      text: Arrays of terms in LIKE filters are OR-chained across predicates.
+    li_003:
+      text: Case sensitivity follows SQLite defaults (generally case-sensitive for
+        ASCII); collations can affect this.
+  p_007: 'Example config (tests):'
+  code_002: |-
+    adapter: sqlite3
+    database: ":memory:"
+  p_008: To persist a database file locally, set `SQLITE_DATABASE` to a path (e.g.,
+    `tmp/test.sqlite3`).
