@@ -1,0 +1,290 @@
+---
+p_001: This page shows how to use Rokaki to define filters and apply them to ActiveRecord
+  relations.
+h2_001: Installation
+p_002: 'Add the gem to your Gemfile and bundle:'
+code_001: gem "rokaki", "~> 0.15"
+code_002: bundle install
+h2_002: Basic setup
+p_003: Include `Rokaki::Filterable` in models you want to filter, and define a `filter_map`
+  with fields and nested associations.
+code_003: |-
+  class Author < ActiveRecord::Base
+    has_many :articles
+  end
+
+  class ArticleQuery
+    include Rokaki::FilterModel
+    belongs_to :author
+
+    # Choose model; adapter is auto-detected from the model's connection.
+    # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+    filter_model :article
+
+    # Map a single query key (:q) to multiple LIKE targets
+    define_query_key :q
+    like title: :circumfix, content: :circumfix
+
+    # Nested LIKEs via hash mapping
+    like author: { first_name: :prefix, last_name: :suffix }
+  end
+h2_003: Applying filters
+p_004: Call `Model.filter(params)` to build a relation based on supported keys.
+code_004: |-
+  params = {
+    title_prefix: "Intro",
+    q: ["ruby", "rails"],
+    author_last_name: "martin"
+  }
+
+  filtered = Article.filter(params)
+  # => ActiveRecord::Relation (chainable)
+p_005: 'You can keep chaining other scopes/clauses:'
+code_005: 'Article.filter(params).order(published: :desc).limit(20)'
+h2_004: LIKE modes and affix options
+p_006: 'Declare the LIKE mode via the value in your `like` mapping (there is no `modes:`
+  option). For example: `like title: :prefix`.'
+ul_001:
+  li_001:
+    text: "`prefix` → matches strings that start with a term (pattern: `%term`)"
+  li_002:
+    text: "`suffix` → matches strings that end with a term (pattern: `term%`)"
+  li_003:
+    text: "`circumfix` → matches strings that contain a term (pattern: `%term%`)"
+    ul_001:
+      li_001:
+        text: 'Synonyms supported: `:parafix`, `:confix`, `:ambifix` (all behave the
+          same as `:circumfix`)'
+p_007: 'Each accepts a single string or an array of strings. Rokaki generates adapter‑aware
+  SQL:'
+ul_002:
+  li_001:
+    text: 'PostgreSQL: `LIKE`/`ILIKE` with `ANY (ARRAY[...])`'
+  li_002:
+    text: 'MySQL: `LIKE`/`LIKE BINARY` and, in nested-like contexts, `REGEXP` where
+      designed'
+  li_003:
+    text: 'SQL Server: `LIKE` with safe escaping; arrays expand into OR chains of
+      parameterized `LIKE` predicates'
+h2_005: Nested filters
+p_008: Use `nested :association` to scope filters to joined tables. Rokaki handles
+  the necessary joins and qualified columns.
+code_006: |-
+  filter_map do
+    nested :author do
+      like :first_name, key: :author_first
+    end
+  end
+p_009: Params would include `author_first`, `author_first_prefix`, etc.
+h2_006: Customization tips
+ul_003:
+  li_001:
+    text: Use `key:` to map a filter to a different params key.
+  li_002:
+    text: Combine multiple filters; Rokaki composes them with `AND` by default.
+  li_003:
+    text: For advanced cases, write custom filters in your app by extending the DSL
+      (see source for `BasicFilter`/`NestedFilter`).
+h2_007: Block-form DSL
+p_010: 'Note: The block-form DSL is available starting in Rokaki 0.13.0.'
+p_011: Rokaki also supports a block-form DSL that is equivalent to the argument-based
+  form. Use it when you prefer grouping your mappings in a single block.
+h3_001: FilterModel block form
+code_007: |-
+  class ArticleQuery
+    include Rokaki::FilterModel
+
+    # Choose model; adapter is auto-detected from the model's connection.
+    # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+    filter_model :article
+
+    # Declare a single query key used by all LIKE/equality filters below
+    define_query_key :q
+
+    # Declare mappings inside a block
+    filter_map do
+      # LIKE mappings on the base model
+      like title: :circumfix, content: :circumfix
+
+      # Nested mappings on associations
+      nested :author do
+        like first_name: :prefix, last_name: :suffix
+
+        # You can also declare equality filters in block form
+        filters :id
+      end
+    end
+
+    attr_accessor :filters
+    def initialize(filters: {})
+      @filters = filters
+    end
+  end
+
+  # Usage
+  ArticleQuery.new(filters: { q: ["Intro", "Guide"] }).results
+p_012: 'Notes:'
+ul_004:
+  li_001:
+    text: Modes are declared by the values in your `like` mapping (`:prefix`, `:suffix`,
+      `:circumfix`). Synonyms `:parafix`, `:confix`, `:ambifix` behave like `:circumfix`.
+  li_002:
+    text: Arrays for `q` are supported across adapters. PostgreSQL uses `ANY (ARRAY[...])`,
+      MySQL/SQL Server expand to OR chains as appropriate.
+h3_002: Filterable block form
+p_013: Use the block form to define simple key accessors (no SQL). Useful for plain
+  Ruby objects or when building a mapping layer.
+code_008: |-
+  class ArticleFilters
+    include Rokaki::Filterable
+    filter_key_prefix :__
+
+    filter_map do
+      filters :date, author: [:first_name, :last_name]
+
+      nested :author do
+        nested :location do
+          filters :city
+        end
+      end
+    end
+
+    # Expect a #filters method that returns a hash
+    attr_reader :filters
+    def initialize(filters: {})
+      @filters = filters
+    end
+  end
+
+  f = ArticleFilters.new(filters: {
+    date: '2025-01-01',
+    author: { first_name: 'Ada', last_name: 'Lovelace', location: { city: 'London' } }
+  })
+
+  f.__date                        # => '2025-01-01'
+  f.__author__first_name          # => 'Ada'
+  f.__author__last_name           # => 'Lovelace'
+  f.__author__location__city      # => 'London'
+p_014: 'Tips:'
+ul_005:
+  li_001:
+    text: "`filter_key_prefix` and `filter_key_infix` control the generated accessor
+      names."
+  li_002:
+    text: Inside the block, `nested :association` affects all `filters` declared within
+      it.
+h2_008: Backend auto-detection
+p_015: By default, Rokaki auto-detects which database adapter to use from your model’s
+  ActiveRecord connection. This means you usually don’t need to pass `db:` explicitly.
+ul_006:
+  li_001:
+    text: 'Single-adapter apps: No configuration needed — Rokaki infers the adapter
+      from the model connection.'
+  li_002:
+    text: 'Multi-adapter apps: If more than one adapter is detected in the process,
+      Rokaki raises a clear error asking you to declare which backend to use.'
+  li_003:
+    text: 'Explicit override: You can always specify `db:` on `filter_model` or call
+      `filter_db` later.'
+p_016: 'Examples:'
+code_009: |-
+  class ArticleQuery
+    include Rokaki::FilterModel
+
+    # Adapter auto-detected (recommended default)
+    filter_model :article
+    define_query_key :q
+
+    filter_map do
+      like title: :circumfix
+    end
+  end
+p_017: 'Explicit selection/override:'
+code_010: |-
+  class ArticleQuery
+    include Rokaki::FilterModel
+
+    # Option A: choose upfront
+    filter_model :article, db: :postgres
+
+    # Option B: or set it later
+    # filter_model :article
+    # filter_db :sqlite
+  end
+p_018: 'Ambiguity behavior (apps with multiple adapters):'
+ul_007:
+  li_001:
+    text: 'If Rokaki sees multiple adapters in use and you haven’t specified one,
+      it raises:'
+code_011: 'Rokaki::Error: Multiple database adapters detected (...). Please declare
+  which backend to use via db: or filter_db.'
+ul_008:
+  li_001:
+    text: 'If it cannot detect any adapter at all, it raises:'
+code_012: 'Rokaki::Error: Unable to auto-detect database adapter. Ensure your model
+  is connected or pass db: explicitly.'
+h2_009: Dynamic runtime listener (no code changes needed)
+p_019: You can construct a Rokaki filter class at runtime from a payload (e.g., JSON
+  → Hash) and use it immediately — no prior class is required. Rokaki will compile
+  the tiny class on the fly and generate the methods once.
+h3_003: FilterModel example
+code_013: |-
+  # Example payload (e.g., parsed JSON)
+  payload = {
+    model: :article,
+    db: :postgres,        # optional; or :mysql, :sqlserver, :oracle, :sqlite
+    query_key: :q,        # the key in params with search term(s)
+    like: {               # like mappings (deeply nested allowed)
+      title: :circumfix,
+      author: { first_name: :prefix }
+    }
+  }
+
+  # Build an anonymous class at runtime and use it immediately
+  listener = Class.new do
+    include Rokaki::FilterModel
+
+    filter_model payload[:model], db: payload[:db]
+    define_query_key payload[:query_key]
+
+    filter_map do
+      like payload[:like]
+    end
+
+    attr_accessor :filters
+    def initialize(filters: {})
+      @filters = filters
+    end
+  end
+
+  results = listener.new(filters: { q: ["Ada", "Turing"] }).results
+  # => ActiveRecord::Relation
+h3_004: Filterable example (no SQL)
+code_014: |-
+  mapper = Class.new do
+    include Rokaki::Filterable
+    filter_key_prefix :__
+
+    filter_map do
+      filters :date, author: [:first_name, :last_name]
+    end
+
+    attr_reader :filters
+    def initialize(filters: {})
+      @filters = filters
+    end
+  end
+
+  m = mapper.new(filters: { date: '2025-01-01', author: { first_name: 'Ada', last_name: 'Lovelace' } })
+  m.__date                   # => '2025-01-01'
+  m.__author__first_name     # => 'Ada'
+  m.__author__last_name      # => 'Lovelace'
+p_020: 'Notes:'
+ul_009:
+  li_001:
+    text: This approach is production‑ready and requires no core changes to Rokaki.
+  li_002:
+    text: You can cache the generated class by a digest of the payload to avoid recompiling.
+  li_003:
+    text: For maximum safety, validate/allow‑list models/columns coming from untrusted
+      payloads.

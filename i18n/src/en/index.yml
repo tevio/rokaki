@@ -1,0 +1,123 @@
+---
+p_001: Rokaki is a small Ruby library that helps you build safe, composable filters
+  for ActiveRecord queries in web requests.
+ul_001:
+  li_001:
+    text: Works with PostgreSQL, MySQL, SQL Server, Oracle, and SQLite
+  li_002:
+    text: Supports simple and nested filters
+  li_003:
+    text: 'LIKE-based matching with prefix/suffix/circumfix modes (circumfix also
+      accepts synonyms: parafix, confix, ambifix)'
+  li_004:
+    text: Array-of-terms matching (adapter-aware)
+  li_005:
+    text: Auto-detects the database backend; specify db only when your app uses multiple
+      adapters or you need an override
+p_002: 'Get started below or jump to:'
+link_001: Usage
+link_002: Database adapters
+link_003: Configuration
+ul_002:
+  li_001:
+    text: "[Usage](./usage)"
+  li_002:
+    text: "[Database adapters](./adapters)"
+  li_003:
+    text: "[Configuration](./configuration)"
+h2_001: Installation
+p_003: 'Add to your applications Gemfile:'
+code_001: gem "rokaki", "~> 0.15"
+p_004: 'Then:'
+code_002: bundle install
+h2_002: Quick start
+p_005: 'You can declare mappings in two ways: argument-based (original) or block-form
+  DSL. Both are equivalent.'
+p_006: 'Argument-based form:'
+code_003: |-
+  class ArticleQuery
+    include Rokaki::FilterModel
+
+    # Tell Rokaki which model to query. Adapter is auto-detected from the connection.
+    # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+    filter_model :article
+
+    # Map a single query key (:q) to multiple LIKE targets on Article
+    define_query_key :q
+    like title: :circumfix, content: :circumfix
+
+    # Nested LIKEs on associated models are expressed with hashes
+    like author: { first_name: :prefix, last_name: :suffix }
+
+    attr_accessor :filters
+    def initialize(filters: {})
+      @filters = filters
+    end
+  end
+
+  # In a controller/service:
+  filtered = ArticleQuery.new(filters: params).results
+p_007: 'Block-form DSL (same behavior):'
+code_004: |-
+  class ArticleQuery
+    include Rokaki::FilterModel
+
+    # Adapter is auto-detected from the connection by default.
+    # If your app uses multiple adapters, pass db: explicitly (e.g., db: :postgres)
+    filter_model :article
+    define_query_key :q
+
+    filter_map do
+      like title: :circumfix, content: :circumfix
+      nested :author do
+        like first_name: :prefix, last_name: :suffix
+        # You can also declare equality filters inside nested contexts
+        filters :id
+      end
+    end
+
+    attr_accessor :filters
+    def initialize(filters: {})
+      @filters = filters
+    end
+  end
+
+  # In a controller/service:
+  filtered = ArticleQuery.new(filters: params).results
+p_008: 'Where `params` can include keys like `q`, `author_first_name`, `author_last_name`,
+  etc. The LIKE mode for each key is defined in your `like` mapping (e.g., `title:
+  :circumfix`), and Rokaki builds the appropriate `WHERE` clauses safely and adapter‑aware.'
+h2_003: Matching modes
+ul_003:
+  li_001:
+    text: 'prefix: matches values that start with given term(s)'
+  li_002:
+    text: 'suffix: matches values that end with given term(s)'
+  li_003:
+    text: 'circumfix: matches values that contain given term(s)'
+p_009: All modes accept either a single string or an array of terms.
+h2_004: What’s new in 0.13.0
+ul_004:
+  li_001:
+    text: Block-form DSL parity across both FilterModel and Filterable
+  li_002:
+    text: 'Circumfix affix synonyms supported: :parafix, :confix, :ambifix'
+  li_003:
+    text: SQL Server adapter support and CI coverage
+  li_004:
+    text: ENV overrides for all adapters in test helpers; improved DB bootstrap in
+      specs
+  li_005:
+    text: Documentation site via GitHub Pages
+h2_005: Next steps
+link_004: Usage
+link_005: Database adapters
+link_006: Configuration
+ul_005:
+  li_001:
+    text: Learn the full DSL and examples in [Usage](./usage)
+  li_002:
+    text: See adapter specifics (PostgreSQL/MySQL/SQL Server/Oracle/SQLite) in [Database
+      adapters](./adapters)
+  li_003:
+    text: Configure connections and environment variables in [Configuration](./configuration)

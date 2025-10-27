@@ -1,0 +1,104 @@
+---
+p_001: This page covers configuration, environment overrides, and tips for running
+  the test suite across adapters.
+h2_001: Environment variables
+p_002: Rokakis test helpers (used in the specs) support environment variable overrides
+  for all adapters. These are useful when your local databases run on non‑default
+  ports or hosts.
+h3_001: SQL Server
+ul_001:
+  li_001:
+    text: "`SQLSERVER_HOST` (default: `localhost`)"
+  li_002:
+    text: "`SQLSERVER_PORT` (default: `1433`)"
+  li_003:
+    text: "`SQLSERVER_USERNAME` (default: `sa`)"
+  li_004:
+    text: "`SQLSERVER_PASSWORD`"
+  li_005:
+    text: "`SQLSERVER_DATABASE` (default: `rokaki`)"
+h3_002: MySQL
+ul_002:
+  li_001:
+    text: "`MYSQL_HOST` (default: `127.0.0.1`)"
+  li_002:
+    text: "`MYSQL_PORT` (default: `3306`)"
+  li_003:
+    text: "`MYSQL_USERNAME` (default: `rokaki`)"
+  li_004:
+    text: "`MYSQL_PASSWORD` (default: `rokaki`)"
+  li_005:
+    text: "`MYSQL_DATABASE` (default: `rokaki`)"
+h3_003: PostgreSQL
+ul_003:
+  li_001:
+    text: "`POSTGRES_HOST` (default: `127.0.0.1`)"
+  li_002:
+    text: "`POSTGRES_PORT` (default: `5432`)"
+  li_003:
+    text: "`POSTGRES_USERNAME` (default: `postgres`)"
+  li_004:
+    text: "`POSTGRES_PASSWORD` (default: `postgres`)"
+  li_005:
+    text: "`POSTGRES_DATABASE` (default: `rokaki`)"
+h3_004: Oracle
+ul_004:
+  li_001:
+    text: "`ORACLE_HOST` (default: `127.0.0.1`)"
+  li_002:
+    text: "`ORACLE_PORT` (default: `1521`)"
+  li_003:
+    text: "`ORACLE_USERNAME` (default: `ROKAKI`)"
+  li_004:
+    text: "`ORACLE_PASSWORD` (default: `rokaki`)"
+  li_005:
+    text: "`ORACLE_DATABASE` (service/alias; default: `/freepdb1` in CI)"
+  li_006:
+    text: "`ORACLE_SERVICE_NAME` (optional; if set, Rokaki builds a full descriptor
+      string)"
+h3_005: SQLite
+ul_005:
+  li_001:
+    text: '`SQLITE_DATABASE` (path to a SQLite file; if unset, tests use an in-memory
+      DB via `":memory:"`)'
+h2_002: Backend auto-detection
+p_003: By default, Rokaki infers the database adapter from your model’s ActiveRecord
+  connection.
+ul_006:
+  li_001:
+    text: 'Single-adapter apps: no `db:` needed.'
+  li_002:
+    text: 'Multiple adapters present: pass `db:` to `filter_model` (or call `filter_db`)
+      to choose explicitly.'
+  li_003:
+    text: 'Errors:'
+    ul_001:
+      li_001:
+        text: "`Rokaki::Error: Multiple database adapters detected (...). Please declare
+          which backend to use via db: or filter_db.`"
+      li_002:
+        text: "`Rokaki::Error: Unable to auto-detect database adapter. Ensure your
+          model is connected or pass db: explicitly.`"
+h2_003: SQL Server notes
+ul_007:
+  li_001:
+    text: Rokaki uses `LIKE` with proper escaping and OR expansion for arrays of terms.
+  li_002:
+    text: Case sensitivity follows your database/column collation. Future versions
+      may allow inline `COLLATE` options.
+h2_004: Running tests locally
+p_004: Ensure you have Ruby (see `.ruby-version`), then install dependencies and run
+  specs.
+code_001: |-
+  bundle install
+  ./spec/ordered_run.sh
+p_005: 'Or run a single adapter suite, for example SQL Server:'
+code_002: bundle exec rspec spec/lib/03_sqlserver_aware_spec.rb
+p_006: 'If your SQL Server listens on a different port (e.g., 1434), set an override:'
+code_003: |-
+  export SQLSERVER_PORT=1434
+  bundle exec rspec spec/lib/03_sqlserver_aware_spec.rb
+h2_005: GitHub Actions
+p_007: The repository includes CI that starts MySQL (9.4), PostgreSQL (13), SQL Server
+  (2022), and Oracle (23 Free) services and runs the ordered spec suite. SQLite is
+  embedded and requires no service container. See `.github/workflows/spec.yml`.
