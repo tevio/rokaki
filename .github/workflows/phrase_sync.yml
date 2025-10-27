@@ -1,0 +1,82 @@
+name: Sync docs translations with Phrase
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # nightly UTC
+  push:
+    paths:
+      - 'docs/index.md'
+      - 'docs/usage.md'
+      - 'docs/adapters.md'
+      - 'docs/configuration.md'
+      - '.phrase.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  phrase-sync:
+    runs-on: ubuntu-latest
+    env:
+      PHRASE_ACCESS_TOKEN: ${{ secrets.PHRASE_ACCESS_TOKEN }}
+      PHRASE_PROJECT_ID: ${{ secrets.PHRASE_PROJECT_ID }}
+      PHRASE_SOURCE_LOCALE_ID: ${{ secrets.PHRASE_SOURCE_LOCALE_ID }}
+      PHRASE_API_HOST: ${{ secrets.PHRASE_API_HOST }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preflight environment check
+        run: |
+          set -euo pipefail
+          if [[ -z "${PHRASE_ACCESS_TOKEN:-}" ]]; then
+            echo "Missing required secret: PHRASE_ACCESS_TOKEN" 1>&2
+            echo "Please add it under Repo Settings → Secrets and variables → Actions." 1>&2
+            exit 1
+          fi
+          echo "Phrase host: ${PHRASE_API_HOST:-https://api.phrase.com}"
+          echo "Using project_id from .phrase.yml"
+
+      - name: Setup Phrase CLI
+        uses: phrase/setup-cli@v1
+        with:
+          version: 2.50.0
+
+      - name: Verify Phrase CLI
+        run: phrase version
+
+      # Implement official steps: pull then push (with wait)
+      - name: Pull translations from Phrase
+        run: |
+          set -euo pipefail
+          HOST="${PHRASE_API_HOST:-https://api.phrase.com}"
+          echo "Using Phrase host for pull: $HOST"
+          phrase pull --host "$HOST" --config .phrase.yml
+
+      - name: Push sources to Phrase (wait for processing)
+        run: |
+          set -euo pipefail
+          HOST="${PHRASE_API_HOST:-https://api.phrase.com}"
+          echo "Using Phrase host for push: $HOST"
+          phrase push --host "$HOST" --wait --config .phrase.yml
+
+      # Create a PR if the pull produced modified files (no-op if nothing changed)
+      - name: Create Pull Request with updated translations
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(docs): update translations from Phrase'
+          title: 'Update docs translations from Phrase'
+          body: |
+            Automated synchronization with Phrase.
+            - Source pages: `docs/index.md`, `docs/usage.md`, `docs/adapters.md`, `docs/configuration.md`
+            - See `.phrase.yml` for mapping
+          branch: chore/update-translations-from-phrase
+          delete-branch: true
+          labels: docs, i18n
+
+# Notes:
+# - Set repository secret PHRASE_ACCESS_TOKEN. Optional: PHRASE_API_HOST (e.g., https://api.phrase.com or https://api.eu.phrase.com).
+# - Project ID is configured in `.phrase.yml` (phrase.project_id); the CLI does not accept --project_id for push/pull.
+# - The `.phrase.yml` maps English sources to per-locale targets under docs/_i18n/<locale>/.
