@@ -1,4 +1,4 @@
-name: Build documentation (no deploy)
+name: Build documentation (pre deploy)
 
 on:
   push:
