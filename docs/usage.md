@@ -4,6 +4,8 @@ title: Usage
 permalink: /usage
 ---
 
+{% include lang_switcher.html %}
+
 This page shows how to use Rokaki to define filters and apply them to ActiveRecord relations.
 
 ## Installation

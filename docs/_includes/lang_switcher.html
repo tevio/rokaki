@@ -1,0 +1,18 @@
+<nav class="lang-switcher" aria-label="Language">
+  <strong>Language:</strong>
+  {% assign current = site.active_lang | default: site.default_lang %}
+  {% for lang in site.languages %}
+    {% if lang == current %}
+      <span class="current" lang="{{ lang }}">{{ lang }}</span>
+    {% else %}
+      <a href="{{ site.baseurl }}/{{ lang }}/" hreflang="{{ lang }}" lang="{{ lang }}">{{ lang }}</a>
+    {% endif %}
+    {% unless forloop.last %} · {% endunless %}
+  {% endfor %}
+</nav>
+
+<style>
+.lang-switcher { font-size: 0.9rem; margin: 0.5rem 0 1rem; }
+.lang-switcher .current { font-weight: 600; }
+.lang-switcher a { text-decoration: none; }
+</style>

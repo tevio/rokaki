@@ -1,0 +1,39 @@
+name: Build & Deploy Docs (i18n)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.0
+          bundler-cache: false
+
+      - name: Install docs dependencies
+        working-directory: docs
+        run: |
+          bundle install --jobs 4 --retry 3
+
+      - name: Build localized site (jekyll + polyglot)
+        working-directory: docs
+        run: |
+          bundle exec jekyll build --destination _site
+
+      - name: Deploy to GitHub Pages (gh-pages)
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs/_site
+          force_orphan: true

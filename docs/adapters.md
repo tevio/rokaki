@@ -4,6 +4,8 @@ title: Database adapters
 permalink: /adapters
 ---
 
+{% include lang_switcher.html %}
+
 Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle, and SQLite.
 
 ## Overview

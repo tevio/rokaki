@@ -1,0 +1,187 @@
+name: Sync docs translations with Phrase
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # nightly UTC
+  push:
+    paths:
+      - 'docs/index.md'
+      - 'docs/usage.md'
+      - 'docs/adapters.md'
+      - 'docs/configuration.md'
+      - '.phrase.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  phrase-sync:
+    runs-on: ubuntu-latest
+    env:
+      PHRASE_ACCESS_TOKEN: ${{ secrets.PHRASE_ACCESS_TOKEN }}
+      PHRASE_PROJECT_ID: ${{ secrets.PHRASE_PROJECT_ID }}
+      PHRASE_SOURCE_LOCALE_ID: ${{ secrets.PHRASE_SOURCE_LOCALE_ID }}
+      PHRASE_API_HOST: ${{ secrets.PHRASE_API_HOST }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preflight environment check
+        run: |
+          set -euo pipefail
+          if [[ -z "${PHRASE_ACCESS_TOKEN:-}" ]]; then
+            echo "Missing required secret: PHRASE_ACCESS_TOKEN" 1>&2
+            echo "Please add it under Repo Settings → Secrets and variables → Actions." 1>&2
+            exit 1
+          fi
+          echo "Phrase host: ${PHRASE_API_HOST:-https://api.phrase.com}"
+          if [[ -z "${PHRASE_PROJECT_ID:-}" ]]; then
+            echo "Note: PHRASE_PROJECT_ID secret not set; .phrase.yml must contain phrase.project_id." 1>&2
+          else
+            echo "Using project_id from secret."
+          fi
+
+      - name: Setup Phrase CLI
+        uses: phrase/setup-cli@v1
+        with:
+          version: 2.50.0
+
+      - name: Verify Phrase CLI
+        run: phrase version
+
+      - name: Setup Ruby for i18n scripts
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Extract YAML catalogs for Phrase (i18n/src/en/*.yml)
+        run: ruby scripts/docs_i18n.rb extract
+
+      - name: Install jq (for locale discovery)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Discover available locales and generate pull config
+        id: gen_pull_config
+        run: |
+          set -euo pipefail
+          HOST="${PHRASE_API_HOST:-https://api.phrase.com}"
+          PROJECT_ID="${PHRASE_PROJECT_ID:-}"
+
+          # If project id not provided via secret, try to read it from .phrase.yml
+          if [[ -z "$PROJECT_ID" ]]; then
+            if grep -qE '^\s*project_id:' .phrase.yml; then
+              PROJECT_ID=$(sed -nE 's/^\s*project_id:\s*([A-Za-z0-9_-]+)\s*$/\1/p' .phrase.yml | head -n1)
+            fi
+          fi
+
+          if [[ -z "$PROJECT_ID" ]]; then
+            echo "Could not determine PHRASE project_id (missing secret and .phrase.yml entry). Skipping pull." 1>&2
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Fetching locales from $HOST for project $PROJECT_ID"
+          # Use Bearer as per working curl example from user
+          LOC_JSON=$(curl -fsS -H "Authorization: Bearer ${PHRASE_ACCESS_TOKEN}" "$HOST/v2/projects/$PROJECT_ID/locales")
+          # Desired locale codes as configured in docs/_config.yml
+          DESIRED=(ja zh-CN zh-TW es pt-BR ru fr de ko it tr pl nl id vi uk ar he hi)
+          mkdir -p docs/_i18n
+
+          # Build list of available codes
+          mapfile -t AVAILABLE < <(echo "$LOC_JSON" | jq -r '.[].code')
+          echo "Available locale codes: ${AVAILABLE[*]}"
+
+          # Intersect desired with available
+          SELECTED=()
+          for code in "${DESIRED[@]}"; do
+            for have in "${AVAILABLE[@]}"; do
+              if [[ "$code" == "$have" ]]; then
+                SELECTED+=("$code")
+                break
+              fi
+            done
+          done
+
+          if [[ ${#SELECTED[@]} -eq 0 ]]; then
+            echo "No matching locales found in Phrase project. Skipping pull." 1>&2
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Will pull locales: ${SELECTED[*]}"
+
+          # Generate a temporary pull config restricted to the selected locales
+          GEN_CFG=".phrase.pull.generated.yml"
+          {
+            echo "phrase:"
+            echo "  file_format: yml"
+            echo "  project_id: $PROJECT_ID"
+            echo "  pull:"
+            echo "    targets:"
+          } > "$GEN_CFG"
+
+          add_target() {
+            local locale="$1"; local page="$2"; local tag="$3";
+            local out="i18n/locales/${locale}/${page}.yml"
+            mkdir -p "i18n/locales/${locale}"
+            {
+              echo "      - file: ./${out}"
+              echo "        params:"
+              echo "          locale_id: ${locale}"
+              echo "          tags: ${tag}"
+            } >> "$GEN_CFG"
+          }
+
+          for locale in "${SELECTED[@]}"; do
+            add_target "$locale" index doc:index
+            add_target "$locale" usage doc:usage
+            add_target "$locale" adapters doc:adapters
+            add_target "$locale" configuration doc:configuration
+          done
+
+          echo "Generated pull config:" && sed 's/^/  /' "$GEN_CFG"
+
+          echo "has_targets=true" >> "$GITHUB_OUTPUT"
+          echo "pull_config=$GEN_CFG" >> "$GITHUB_OUTPUT"
+
+      # Implement official steps: pull then push (with wait)
+      - name: Pull translations from Phrase
+        if: steps.gen_pull_config.outputs.has_targets == 'true'
+        run: |
+          set -euo pipefail
+          HOST="${PHRASE_API_HOST:-https://api.phrase.com}"
+          CFG="${{ steps.gen_pull_config.outputs.pull_config }}"
+          echo "Using Phrase host for pull: $HOST"
+          phrase pull --host "$HOST" --config "$CFG"
+
+      - name: Compile localized Markdown from YAML catalogs
+        if: steps.gen_pull_config.outputs.has_targets == 'true'
+        run: ruby scripts/docs_i18n.rb compile
+
+      - name: Push sources to Phrase (wait for processing)
+        run: |
+          set -euo pipefail
+          HOST="${PHRASE_API_HOST:-https://api.phrase.com}"
+          echo "Using Phrase host for push: $HOST"
+          phrase push --host "$HOST" --wait --config .phrase.yml
+
+      # Create a PR if the pull produced modified files (no-op if nothing changed)
+      - name: Create Pull Request with updated translations
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(docs): update translations from Phrase'
+          title: 'Update docs translations from Phrase'
+          body: |
+            Automated synchronization with Phrase.
+            - Source pages: `docs/index.md`, `docs/usage.md`, `docs/adapters.md`, `docs/configuration.md`
+            - The pull step auto-detects available locales in the Phrase project and only pulls those.
+          branch: chore/update-translations-from-phrase
+          delete-branch: true
+          labels: docs, i18n
+
+# Notes:
+# - Set repository secret PHRASE_ACCESS_TOKEN. Optional: PHRASE_API_HOST (e.g., https://api.phrase.com or https://api.eu.phrase.com).
+# - Project ID is configured in `.phrase.yml` (phrase.project_id) or via PHRASE_PROJECT_ID secret for discovery during generation.
+# - The pull step now generates a filtered config to avoid errors when some locales don't exist in Phrase.

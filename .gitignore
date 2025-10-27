@@ -12,3 +12,10 @@
 tags
 *.gem
 TODO.md
+
+# Phrase tokenized sources (legacy)
+.phrase_sources/
+
+# Docs i18n generated sources/tokens
+/i18n/src/en/
+/i18n/tokens/

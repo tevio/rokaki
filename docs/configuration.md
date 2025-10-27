@@ -4,6 +4,8 @@ title: Configuration
 permalink: /configuration
 ---
 
+{% include lang_switcher.html %}
+
 This page covers configuration, environment overrides, and tips for running the test suite across adapters.
 
 ## Environment variables

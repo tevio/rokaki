@@ -4,6 +4,10 @@ source "https://rubygems.org"
 # Static site generator
 gem "jekyll", "~> 4.4"
 
+# Internationalization plugin (built via CI; GitHub Pages serves static output)
+# https://github.com/untra/polyglot
+gem "jekyll-polyglot", "~> 1.8"
+
 # Theme used by docs/_config.yml
 gem "minima", "~> 2.5"
 

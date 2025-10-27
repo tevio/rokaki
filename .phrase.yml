@@ -1,0 +1,381 @@
+# Phrase CLI configuration
+# English source docs mapped to localized targets under docs/_i18n/<locale>/...
+# Required GitHub Secret: PHRASE_ACCESS_TOKEN. Optional: PHRASE_API_HOST. Project ID is configured below.
+
+phrase:
+  file_format: yml
+  project_id: 60bafc9e7c0eba56c3278bd72d348fd3
+
+  push:
+    sources:
+      # Core docs pages (English source of truth)
+      - file: ./i18n/src/en/index.yml
+        params:
+          file_format: yml
+          locale_id: en
+          tags: docs, site, doc:index
+          update_translations: true
+      - file: ./i18n/src/en/usage.yml
+        params:
+          file_format: yml
+          locale_id: en
+          tags: docs, site, doc:usage
+          update_translations: true
+      - file: ./i18n/src/en/adapters.yml
+        params:
+          file_format: yml
+          locale_id: en
+          tags: docs, site, doc:adapters
+          update_translations: true
+      - file: ./i18n/src/en/configuration.yml
+        params:
+          file_format: yml
+          locale_id: en
+          tags: docs, site, doc:configuration
+          update_translations: true
+
+  pull:
+    # Using explicit per-locale targets per 2024 Phrase CLI schema example.
+    # The 'file_format' is inherited from the header; 'locale_id' accepts code or UUID.
+    targets:
+      # Japanese (ja)
+      - file: ./docs/_i18n/ja/index.md
+        params:
+          locale_id: ja
+          tags: doc:index
+      - file: ./docs/_i18n/ja/usage.md
+        params:
+          locale_id: ja
+          tags: doc:usage
+      - file: ./docs/_i18n/ja/adapters.md
+        params:
+          locale_id: ja
+          tags: doc:adapters
+      - file: ./docs/_i18n/ja/configuration.md
+        params:
+          locale_id: ja
+          tags: doc:configuration
+
+      # Chinese Simplified (zh-CN)
+      - file: ./docs/_i18n/zh-CN/index.md
+        params:
+          locale_id: zh-CN
+          tags: doc:index
+      - file: ./docs/_i18n/zh-CN/usage.md
+        params:
+          locale_id: zh-CN
+          tags: doc:usage
+      - file: ./docs/_i18n/zh-CN/adapters.md
+        params:
+          locale_id: zh-CN
+          tags: doc:adapters
+      - file: ./docs/_i18n/zh-CN/configuration.md
+        params:
+          locale_id: zh-CN
+          tags: doc:configuration
+
+      # Chinese Traditional (zh-TW)
+      - file: ./docs/_i18n/zh-TW/index.md
+        params:
+          locale_id: zh-TW
+          tags: doc:index
+      - file: ./docs/_i18n/zh-TW/usage.md
+        params:
+          locale_id: zh-TW
+          tags: doc:usage
+      - file: ./docs/_i18n/zh-TW/adapters.md
+        params:
+          locale_id: zh-TW
+          tags: doc:adapters
+      - file: ./docs/_i18n/zh-TW/configuration.md
+        params:
+          locale_id: zh-TW
+          tags: doc:configuration
+
+      # Spanish (es)
+      - file: ./docs/_i18n/es/index.md
+        params:
+          locale_id: es
+          tags: doc:index
+      - file: ./docs/_i18n/es/usage.md
+        params:
+          locale_id: es
+          tags: doc:usage
+      - file: ./docs/_i18n/es/adapters.md
+        params:
+          locale_id: es
+          tags: doc:adapters
+      - file: ./docs/_i18n/es/configuration.md
+        params:
+          locale_id: es
+          tags: doc:configuration
+
+      # Portuguese (Brazil) (pt-BR)
+      - file: ./docs/_i18n/pt-BR/index.md
+        params:
+          locale_id: pt-BR
+          tags: doc:index
+      - file: ./docs/_i18n/pt-BR/usage.md
+        params:
+          locale_id: pt-BR
+          tags: doc:usage
+      - file: ./docs/_i18n/pt-BR/adapters.md
+        params:
+          locale_id: pt-BR
+          tags: doc:adapters
+      - file: ./docs/_i18n/pt-BR/configuration.md
+        params:
+          locale_id: pt-BR
+          tags: doc:configuration
+
+      # Russian (ru)
+      - file: ./docs/_i18n/ru/index.md
+        params:
+          locale_id: ru
+          tags: doc:index
+      - file: ./docs/_i18n/ru/usage.md
+        params:
+          locale_id: ru
+          tags: doc:usage
+      - file: ./docs/_i18n/ru/adapters.md
+        params:
+          locale_id: ru
+          tags: doc:adapters
+      - file: ./docs/_i18n/ru/configuration.md
+        params:
+          locale_id: ru
+          tags: doc:configuration
+
+      # French (fr)
+      - file: ./docs/_i18n/fr/index.md
+        params:
+          locale_id: fr
+          tags: doc:index
+      - file: ./docs/_i18n/fr/usage.md
+        params:
+          locale_id: fr
+          tags: doc:usage
+      - file: ./docs/_i18n/fr/adapters.md
+        params:
+          locale_id: fr
+          tags: doc:adapters
+      - file: ./docs/_i18n/fr/configuration.md
+        params:
+          locale_id: fr
+          tags: doc:configuration
+
+      # German (de)
+      - file: ./docs/_i18n/de/index.md
+        params:
+          locale_id: de
+          tags: doc:index
+      - file: ./docs/_i18n/de/usage.md
+        params:
+          locale_id: de
+          tags: doc:usage
+      - file: ./docs/_i18n/de/adapters.md
+        params:
+          locale_id: de
+          tags: doc:adapters
+      - file: ./docs/_i18n/de/configuration.md
+        params:
+          locale_id: de
+          tags: doc:configuration
+
+      # Korean (ko)
+      - file: ./docs/_i18n/ko/index.md
+        params:
+          locale_id: ko
+          tags: doc:index
+      - file: ./docs/_i18n/ko/usage.md
+        params:
+          locale_id: ko
+          tags: doc:usage
+      - file: ./docs/_i18n/ko/adapters.md
+        params:
+          locale_id: ko
+          tags: doc:adapters
+      - file: ./docs/_i18n/ko/configuration.md
+        params:
+          locale_id: ko
+          tags: doc:configuration
+
+      # Italian (it)
+      - file: ./docs/_i18n/it/index.md
+        params:
+          locale_id: it
+          tags: doc:index
+      - file: ./docs/_i18n/it/usage.md
+        params:
+          locale_id: it
+          tags: doc:usage
+      - file: ./docs/_i18n/it/adapters.md
+        params:
+          locale_id: it
+          tags: doc:adapters
+      - file: ./docs/_i18n/it/configuration.md
+        params:
+          locale_id: it
+          tags: doc:configuration
+
+      # Turkish (tr)
+      - file: ./docs/_i18n/tr/index.md
+        params:
+          locale_id: tr
+          tags: doc:index
+      - file: ./docs/_i18n/tr/usage.md
+        params:
+          locale_id: tr
+          tags: doc:usage
+      - file: ./docs/_i18n/tr/adapters.md
+        params:
+          locale_id: tr
+          tags: doc:adapters
+      - file: ./docs/_i18n/tr/configuration.md
+        params:
+          locale_id: tr
+          tags: doc:configuration
+
+      # Polish (pl)
+      - file: ./docs/_i18n/pl/index.md
+        params:
+          locale_id: pl
+          tags: doc:index
+      - file: ./docs/_i18n/pl/usage.md
+        params:
+          locale_id: pl
+          tags: doc:usage
+      - file: ./docs/_i18n/pl/adapters.md
+        params:
+          locale_id: pl
+          tags: doc:adapters
+      - file: ./docs/_i18n/pl/configuration.md
+        params:
+          locale_id: pl
+          tags: doc:configuration
+
+      # Dutch (nl)
+      - file: ./docs/_i18n/nl/index.md
+        params:
+          locale_id: nl
+          tags: doc:index
+      - file: ./docs/_i18n/nl/usage.md
+        params:
+          locale_id: nl
+          tags: doc:usage
+      - file: ./docs/_i18n/nl/adapters.md
+        params:
+          locale_id: nl
+          tags: doc:adapters
+      - file: ./docs/_i18n/nl/configuration.md
+        params:
+          locale_id: nl
+          tags: doc:configuration
+
+      # Indonesian (id)
+      - file: ./docs/_i18n/id/index.md
+        params:
+          locale_id: id
+          tags: doc:index
+      - file: ./docs/_i18n/id/usage.md
+        params:
+          locale_id: id
+          tags: doc:usage
+      - file: ./docs/_i18n/id/adapters.md
+        params:
+          locale_id: id
+          tags: doc:adapters
+      - file: ./docs/_i18n/id/configuration.md
+        params:
+          locale_id: id
+          tags: doc:configuration
+
+      # Vietnamese (vi)
+      - file: ./docs/_i18n/vi/index.md
+        params:
+          locale_id: vi
+          tags: doc:index
+      - file: ./docs/_i18n/vi/usage.md
+        params:
+          locale_id: vi
+          tags: doc:usage
+      - file: ./docs/_i18n/vi/adapters.md
+        params:
+          locale_id: vi
+          tags: doc:adapters
+      - file: ./docs/_i18n/vi/configuration.md
+        params:
+          locale_id: vi
+          tags: doc:configuration
+
+      # Ukrainian (uk)
+      - file: ./docs/_i18n/uk/index.md
+        params:
+          locale_id: uk
+          tags: doc:index
+      - file: ./docs/_i18n/uk/usage.md
+        params:
+          locale_id: uk
+          tags: doc:usage
+      - file: ./docs/_i18n/uk/adapters.md
+        params:
+          locale_id: uk
+          tags: doc:adapters
+      - file: ./docs/_i18n/uk/configuration.md
+        params:
+          locale_id: uk
+          tags: doc:configuration
+
+      # Arabic (ar)
+      - file: ./docs/_i18n/ar/index.md
+        params:
+          locale_id: ar
+          tags: doc:index
+      - file: ./docs/_i18n/ar/usage.md
+        params:
+          locale_id: ar
+          tags: doc:usage
+      - file: ./docs/_i18n/ar/adapters.md
+        params:
+          locale_id: ar
+          tags: doc:adapters
+      - file: ./docs/_i18n/ar/configuration.md
+        params:
+          locale_id: ar
+          tags: doc:configuration
+
+      # Hebrew (he)
+      - file: ./docs/_i18n/he/index.md
+        params:
+          locale_id: he
+          tags: doc:index
+      - file: ./docs/_i18n/he/usage.md
+        params:
+          locale_id: he
+          tags: doc:usage
+      - file: ./docs/_i18n/he/adapters.md
+        params:
+          locale_id: he
+          tags: doc:adapters
+      - file: ./docs/_i18n/he/configuration.md
+        params:
+          locale_id: he
+          tags: doc:configuration
+
+      # Hindi (hi)
+      - file: ./docs/_i18n/hi/index.md
+        params:
+          locale_id: hi
+          tags: doc:index
+      - file: ./docs/_i18n/hi/usage.md
+        params:
+          locale_id: hi
+          tags: doc:usage
+      - file: ./docs/_i18n/hi/adapters.md
+        params:
+          locale_id: hi
+          tags: doc:adapters
+      - file: ./docs/_i18n/hi/configuration.md
+        params:
+          locale_id: hi
+          tags: doc:configuration

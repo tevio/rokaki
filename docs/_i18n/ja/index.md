@@ -6,6 +6,8 @@ permalink: /
 
 {% include lang_switcher.html %}
 
+<!-- Translation draft (ja): This localized page is initially populated with the English content. Community review welcome. -->
+
 Rokaki is a small Ruby library that helps you build safe, composable filters for ActiveRecord queries in web requests.
 
 - Works with PostgreSQL, MySQL, SQL Server, Oracle, and SQLite
