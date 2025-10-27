@@ -32,3 +32,19 @@ phrase:
         params:
           locale_id: en
           tags: doc:configuration, docs, site
+      - file: i18n/src/ja/index.yml
+        params:
+          locale_id: ja
+          tags: doc:index, docs, site
+      - file: i18n/src/ja/usage.yml
+        params:
+          locale_id: ja
+          tags: doc:usage, docs, site
+      - file: i18n/src/ja/adapters.yml
+        params:
+          locale_id: ja
+          tags: doc:adapters, docs, site
+      - file: i18n/src/ja/configuration.yml
+        params:
+          locale_id: ja
+          tags: doc:configuration, docs, site

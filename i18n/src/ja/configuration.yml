@@ -1,0 +1,91 @@
+ja:
+  p_001: このページでは、設定、環境のオーバーライド、およびアダプター全体でテストスイートを実行するためのヒントについて説明します。
+  h2_001: 環境変数
+  p_002: Rokakisのテストヘルパー（スペックで使用）は、すべてのアダプターの環境変数オーバーライドをサポートしています。これらは、ローカルデータベースがデフォルト以外のポートまたはホストで実行されている場合に役立ちます。
+  h3_001: SQL Server
+  ul_001:
+    li_001:
+      text: "`SQLSERVER_HOST` (デフォルト: `localhost`)"
+    li_002:
+      text: "`SQLSERVER_PORT` (デフォルト: `1433`)"
+    li_003:
+      text: "`SQLSERVER_USERNAME` (デフォルト: `sa`)"
+    li_004:
+      text: "`SQLSERVER_PASSWORD`"
+    li_005:
+      text: "`SQLSERVER_DATABASE` (デフォルト: `rokaki`)"
+  h3_002: MySQL
+  ul_002:
+    li_001:
+      text: "`MYSQL_HOST` (デフォルト: `127.0.0.1`)"
+    li_002:
+      text: "`MYSQL_PORT` (デフォルト: `3306`)"
+    li_003:
+      text: "`MYSQL_USERNAME` (デフォルト: `rokaki`)"
+    li_004:
+      text: "`MYSQL_PASSWORD` (デフォルト: `rokaki`)"
+    li_005:
+      text: "`MYSQL_DATABASE` (デフォルト: `rokaki`)"
+  h3_003: PostgreSQL
+  ul_003:
+    li_001:
+      text: "`POSTGRES_HOST` (デフォルト: `127.0.0.1`)"
+    li_002:
+      text: "`POSTGRES_PORT` (デフォルト: `5432`)"
+    li_003:
+      text: "`POSTGRES_USERNAME` (デフォルト: `postgres`)"
+    li_004:
+      text: "`POSTGRES_PASSWORD` (デフォルト: `postgres`)"
+    li_005:
+      text: "`POSTGRES_DATABASE` (デフォルト: `rokaki`)"
+  h3_004: Oracle
+  ul_004:
+    li_001:
+      text: "`ORACLE_HOST` (デフォルト: `127.0.0.1`)"
+    li_002:
+      text: "`ORACLE_PORT` (デフォルト: `1521`)"
+    li_003:
+      text: "`ORACLE_USERNAME` (デフォルト: `ROKAKI`)"
+    li_004:
+      text: "`ORACLE_PASSWORD` (デフォルト: `rokaki`)"
+    li_005:
+      text: "`ORACLE_DATABASE` (サービス/エイリアス; デフォルト: CIでは`/freepdb1`)"
+    li_006:
+      text: "`ORACLE_SERVICE_NAME` (オプション; 設定されている場合、Rokakiは完全な記述子文字列を構築します)"
+  h3_005: SQLite
+  ul_005:
+    li_001:
+      text: '`SQLITE_DATABASE` (SQLiteファイルへのパス; 設定されていない場合、テストは`":memory:"`を介してインメモリDBを使用します)'
+  h2_002: バックエンドの自動検出
+  p_003: デフォルトでは、RokakiはモデルのActiveRecord接続からデータベースアダプターを推測します。
+  ul_006:
+    li_001:
+      text: 'シングルアダプターアプリ: `db:`は不要です。'
+    li_002:
+      text: '複数のアダプターが存在する場合: `db:`を`filter_model`に渡す（または`filter_db`を呼び出す）ことで、明示的に選択します。'
+    li_003:
+      text: 'エラー:'
+      ul_001:
+        li_001:
+          text: "`Rokaki::Error: 複数のデータベースアダプターが検出されました(...)。db:またはfilter_dbを介して使用するバックエンドを宣言してください。`"
+        li_002:
+          text: "`Rokaki::Error: データベースアダプターを自動検出できません。モデルが接続されているか、db:を明示的に渡してください。`"
+  h2_003: SQL Serverの注意点
+  ul_007:
+    li_001:
+      text: Rokakiは、適切なエスケープとOR展開を使用して、用語の配列に対して`LIKE`を使用します。
+    li_002:
+      text: 大文字と小文字の区別は、データベース/カラムの照合順序に従います。将来のバージョンでは、インライン`COLLATE`オプションが許可される場合があります。
+  h2_004: ローカルでのテストの実行
+  p_004: Ruby（`.ruby-version`を参照）があることを確認し、依存関係をインストールしてスペックを実行します。
+  code_001: |-
+    bundle install
+    ./spec/ordered_run.sh
+  p_005: 'または、SQL Serverなどの単一のアダプタースイートを実行します:'
+  code_002: bundle exec rspec spec/lib/03_sqlserver_aware_spec.rb
+  p_006: 'SQL Serverが別のポート（例：1434）でリッスンしている場合は、オーバーライドを設定します:'
+  code_003: |-
+    export SQLSERVER_PORT=1434
+    bundle exec rspec spec/lib/03_sqlserver_aware_spec.rb
+  h2_005: GitHub Actions
+  p_007: リポジトリには、MySQL（9.4）、PostgreSQL（13）、SQL Server（2022）、およびOracle（23 Free）サービスを開始し、順序付けられたスペックスイートを実行するCIが含まれています。SQLiteは埋め込まれており、サービスコンテナは必要ありません。`.github/workflows/spec.yml`を参照してください。

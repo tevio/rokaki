@@ -1,0 +1,267 @@
+ja:
+  p_001: このページでは、Rokakiを使用してフィルターを定義し、それらをActiveRecordのリレーションに適用する方法について説明します。
+  h2_001: インストール
+  p_002: 'Gemfileにgemを追加して、bundleを実行します:'
+  code_001: gem "rokaki", "~> 0.15"
+  code_002: bundle install
+  h2_002: 基本的な設定
+  p_003: フィルターしたいモデルに`Rokaki::Filterable`を含め、フィールドとネストされた関連付けを持つ`filter_map`を定義します。
+  code_003: |-
+    class Author < ActiveRecord::Base
+      has_many :articles
+    end
+
+    class ArticleQuery
+      include Rokaki::FilterModel
+      belongs_to :author
+
+      # モデルを選択します。アダプターはモデルの接続から自動検出されます。
+      # アプリが複数のアダプターを使用している場合は、db:を明示的に渡します（例：db: :postgres）
+      filter_model :article
+
+      # 単一のクエリキー（:q）を複数のLIKEターゲットにマッピングします
+      define_query_key :q
+      like title: :circumfix, content: :circumfix
+
+      # ハッシュマッピングによるネストされたLIKE
+      like author: { first_name: :prefix, last_name: :suffix }
+    end
+  h2_003: フィルターの適用
+  p_004: `Model.filter(params)`を呼び出して、サポートされているキーに基づいてリレーションを構築します。
+  code_004: |-
+    params = {
+      title_prefix: "Intro",
+      q: ["ruby", "rails"],
+      author_last_name: "martin"
+    }
+
+    filtered = Article.filter(params)
+    # => ActiveRecord::Relation (チェーン可能)
+  p_005: '他のスコープ/句をチェーンし続けることができます:'
+  code_005: 'Article.filter(params).order(published: :desc).limit(20)'
+  h2_004: LIKEモードと接辞オプション
+  p_006: '`like`マッピングの値でLIKEモードを宣言します（`modes:`オプションはありません）。たとえば、`like title: :prefix`のようにします。'
+  ul_001:
+    li_001:
+      text: "`prefix` → 用語で始まる文字列に一致します（パターン：`%term`）"
+    li_002:
+      text: "`suffix` → 用語で終わる文字列に一致します（パターン：`term%`）"
+    li_003:
+      text: "`circumfix` → 用語を含む文字列に一致します（パターン：`%term%`）"
+      ul_001:
+        li_001:
+          text: 'サポートされている同義語：`:parafix`、`:confix`、`:ambifix`（すべて`:circumfix`と同じように動作します）'
+  p_007: 'それぞれが単一の文字列または文字列の配列を受け入れます。Rokakiはアダプター対応のSQLを生成します:'
+  ul_002:
+    li_001:
+      text: 'PostgreSQL：`LIKE`/`ILIKE`と`ANY (ARRAY[...])`'
+    li_002:
+      text: 'MySQL：`LIKE`/`LIKE BINARY`および、ネストされたlikeコンテキストでは、設計された`REGEXP`'
+    li_003:
+      text: 'SQL Server：安全なエスケープを使用した`LIKE`。配列は、パラメーター化された`LIKE`述語のORチェーンに展開されます'
+  h2_005: ネストされたフィルター
+  p_008: `nested :association`を使用して、結合されたテーブルにフィルターのスコープを設定します。Rokakiは必要な結合と修飾された列を処理します。
+  code_006: |-
+    filter_map do
+      nested :author do
+        like :first_name, key: :author_first
+      end
+    end
+  p_009: パラメーターには、`author_first`、`author_first_prefix`などが含まれます。
+  h2_006: カスタマイズのヒント
+  ul_003:
+    li_001:
+      text: `key:`を使用して、フィルターを別のパラメーターキーにマッピングします。
+    li_002:
+      text: 複数のフィルターを組み合わせます。Rokakiはデフォルトで`AND`でそれらを構成します。
+    li_003:
+      text: 高度なケースでは、`BasicFilter`/`NestedFilter`のソースを参照して、アプリでカスタムフィルターを作成します。
+  h2_007: ブロック形式のDSL
+  p_010: '注：ブロック形式のDSLは、Rokaki 0.13.0以降で使用できます。'
+  p_011: Rokakiは、引数ベースの形式と同等のブロック形式のDSLもサポートしています。マッピングを単一のブロックにグループ化する場合に使用します。
+  h3_001: FilterModelブロック形式
+  code_007: |-
+    class ArticleQuery
+      include Rokaki::FilterModel
+
+      # モデルを選択します。アダプターはモデルの接続から自動検出されます。
+      # アプリが複数のアダプターを使用している場合は、db:を明示的に渡します（例：db: :postgres）
+      filter_model :article
+
+      # 以下のすべてのLIKE/等価フィルターで使用される単一のクエリキーを宣言します
+      define_query_key :q
+
+      # ブロック内でマッピングを宣言します
+      filter_map do
+        # ベースモデルのLIKEマッピング
+        like title: :circumfix, content: :circumfix
+
+        # 関連付けのネストされたマッピング
+        nested :author do
+          like first_name: :prefix, last_name: :suffix
+
+          # ブロック形式で等価フィルターを宣言することもできます
+          filters :id
+        end
+      end
+
+      attr_accessor :filters
+      def initialize(filters: {})
+        @filters = filters
+      end
+    end
+
+    # 使用法
+    ArticleQuery.new(filters: { q: ["Intro", "Guide"] }).results
+  p_012: '注:'
+  ul_004:
+    li_001:
+      text: モードは、`like`マッピングの値（`:prefix`、`:suffix`、`:circumfix`）によって宣言されます。同義語`:parafix`、`:confix`、`:ambifix`は`:circumfix`のように動作します。
+    li_002:
+      text: `q`の配列は、すべてのアダプターでサポートされています。PostgreSQLは`ANY (ARRAY[...])`を使用し、MySQL/SQL Serverは必要に応じてORチェーンに展開します。
+  h3_002: Filterableブロック形式
+  p_013: ブロック形式を使用して、単純なキーアクセサー（SQLなし）を定義します。プレーンなRubyオブジェクトの場合、またはマッピングレイヤーを構築する場合に役立ちます。
+  code_008: |-
+    class ArticleFilters
+      include Rokaki::Filterable
+      filter_key_prefix :__
+
+      filter_map do
+        filters :date, author: [:first_name, :last_name]
+
+        nested :author do
+          nested :location do
+            filters :city
+          end
+        end
+      end
+
+      # ハッシュを返す#filtersメソッドを期待します
+      attr_reader :filters
+      def initialize(filters: {})
+        @filters = filters
+      end
+    end
+
+    f = ArticleFilters.new(filters: {
+      date: '2025-01-01',
+      author: { first_name: 'Ada', last_name: 'Lovelace', location: { city: 'London' } }
+    })
+
+    f.__date                        # => '2025-01-01'
+    f.__author__first_name          # => 'Ada'
+    f.__author__last_name           # => 'Lovelace'
+    f.__author__location__city      # => 'London'
+  p_014: 'ヒント:'
+  ul_005:
+    li_001:
+      text: "`filter_key_prefix`と`filter_key_infix`は、生成されたアクセサー名を制御します。"
+    li_002:
+      text: ブロック内では、`nested :association`は、その中で宣言されたすべての`filters`に影響します。
+  h2_008: バックエンドの自動検出
+  p_015: デフォルトでは、RokakiはモデルのActiveRecord接続から使用するデータベースアダプターを自動検出します。これは通常、`db:`を明示的に渡す必要がないことを意味します。
+  ul_006:
+    li_001:
+      text: 'シングルアダプターアプリ：構成は不要です。Rokakiはモデル接続からアダプターを推測します。'
+    li_002:
+      text: 'マルチアダプターアプリ：プロセスで複数のアダプターが検出された場合、Rokakiは使用するバックエンドを宣言するように求める明確なエラーを発生させます。'
+    li_003:
+      text: '明示的なオーバーライド：`filter_model`で常に`db:`を指定するか、後で`filter_db`を呼び出すことができます。'
+  p_016: '例:'
+  code_009: |-
+    class ArticleQuery
+      include Rokaki::FilterModel
+
+      # アダプターの自動検出（推奨されるデフォルト）
+      filter_model :article
+      define_query_key :q
+
+      filter_map do
+        like title: :circumfix
+      end
+    end
+  p_017: '明示的な選択/オーバーライド:'
+  code_010: |-
+    class ArticleQuery
+      include Rokaki::FilterModel
+
+      # オプションA：事前に選択する
+      filter_model :article, db: :postgres
+
+      # オプションB：または後で設定する
+      # filter_model :article
+      # filter_db :sqlite
+    end
+  p_018: 'あいまいさの動作（複数のアダプターを使用するアプリ）:'
+  ul_007:
+    li_001:
+      text: 'Rokakiが複数のアダプターの使用を確認し、アダプターを指定していない場合、次のエラーが発生します:'
+  code_011: 'Rokaki::Error: 複数のデータベースアダプターが検出されました（...）。db:またはfilter_dbを使用して、使用するバックエンドを宣言してください。'
+  ul_008:
+    li_001:
+      text: 'アダプターをまったく検出できない場合、次のエラーが発生します:'
+  code_012: 'Rokaki::Error: データベースアダプターを自動検出できません。モデルが接続されているか、db:を明示的に渡してください。'
+  h2_009: 動的なランタイムリスナー（コードの変更は不要）
+  p_019: ペイロード（例：JSON→Hash）からランタイム時にRokakiフィルタークラスを構築し、すぐに使用できます。事前のクラスは必要ありません。Rokakiは、その場で小さなクラスをコンパイルし、メソッドを一度生成します。
+  h3_003: FilterModelの例
+  code_013: |-
+    # ペイロードの例（例：解析されたJSON）
+    payload = {
+      model: :article,
+      db: :postgres,        # オプション; または:mysql、:sqlserver、:oracle、:sqlite
+      query_key: :q,        # 検索語句を含むparamsのキー
+      like: {               # likeマッピング（深くネストされたものが許可されます）
+        title: :circumfix,
+        author: { first_name: :prefix }
+      }
+    }
+
+    # ランタイム時に匿名クラスを構築してすぐに使用します
+    listener = Class.new do
+      include Rokaki::FilterModel
+
+      filter_model payload[:model], db: payload[:db]
+      define_query_key payload[:query_key]
+
+      filter_map do
+        like payload[:like]
+      end
+
+      attr_accessor :filters
+      def initialize(filters: {})
+        @filters = filters
+      end
+    end
+
+    results = listener.new(filters: { q: ["Ada", "Turing"] }).results
+    # => ActiveRecord::Relation
+  h3_004: Filterableの例（SQLなし）
+  code_014: |-
+    mapper = Class.new do
+      include Rokaki::Filterable
+      filter_key_prefix :__
+
+      filter_map do
+        filters :date, author: [:first_name, :last_name]
+      end
+
+      attr_reader :filters
+      def initialize(filters: {})
+        @filters = filters
+      end
+    end
+
+    m = mapper.new(filters: { date: '2025-01-01', author: { first_name: 'Ada', last_name: 'Lovelace' } })
+    m.__date                   # => '2025-01-01'
+    m.__author__first_name     # => 'Ada'
+    m.__author__last_name      # => 'Lovelace'
+  p_020: '注:'
+  ul_009:
+    li_001:
+      text: このアプローチは本番環境に対応しており、Rokakiへのコアの変更は必要ありません。
+    li_002:
+      text: ペイロードのダイジェストで生成されたクラスをキャッシュして、再コンパイルを回避できます。
+    li_003:
+      text: 最大限の安全のために、信頼できないペイロードから取得したモデル/列を検証/許可リストに登録します。
+
+

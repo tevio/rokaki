@@ -1,0 +1,117 @@
+---
+ja:
+  p_001: Rokakiは、WebリクエストでActiveRecordクエリの安全で構成可能なフィルターを構築するのに役立つ小さなRubyライブラリです。
+  ul_001:
+    li_001:
+      text: PostgreSQL、MySQL、SQL Server、Oracle、SQLiteで動作します
+    li_002:
+      text: 単純なフィルターとネストされたフィルターをサポートします
+    li_003:
+      text: "プレフィックス/サフィックス/サーカムフィックスモード（サーカムフィックスは同義語：パラフィックス、コンフィックス、アンビフィックスも受け入れます）によるLIKEベースのマッチング"
+    li_004:
+      text: 用語の配列マッチング（アダプター対応）
+    li_005:
+      text: データベースバックエンドを自動検出します。アプリが複数のアダプターを使用している場合、またはオーバーライドが必要な場合にのみ、dbを指定してください
+  p_002: '以下から始めるか、以下にジャンプしてください：'
+  link_001: 使い方
+  link_002: データベースアダプター
+  link_003: 設定
+  ul_002:
+    li_001:
+      text: "[使い方](./usage)"
+    li_002:
+      text: "[データベースアダプター](./adapters)"
+    li_003:
+      text: "[設定](./configuration)"
+  h2_001: インストール
+  p_003: 'アプリケーションのGemfileに追加します：'
+  code_001: gem "rokaki", "~> 0.15"
+  p_004: '次に：'
+  code_002: bundle install
+  h2_002: クイックスタート
+  p_005: 'マッピングは、引数ベース（オリジナル）またはブロック形式のDSLの2つの方法で宣言できます。どちらも同等です。'
+  p_006: '引数ベースの形式：'
+  code_003: |-
+    class ArticleQuery
+      include Rokaki::FilterModel
+
+      # クエリするモデルをRokakiに伝えます。アダプターは接続から自動検出されます。
+      # アプリが複数のアダプターを使用している場合は、db：を明示的に渡します（例：db：：postgres）
+      filter_model :article
+
+      # 単一のクエリキー（：q）をArticleの複数のLIKEターゲットにマップします
+      define_query_key :q
+      like title: :circumfix, content: :circumfix
+
+      # 関連モデルのネストされたLIKEは、ハッシュで表現されます
+      like author: { first_name: :prefix, last_name: :suffix }
+
+      attr_accessor :filters
+      def initialize(filters: {})
+        @filters = filters
+      end
+    end
+
+    # コントローラー/サービス内：
+    filtered = ArticleQuery.new(filters: params).results
+  p_007: 'ブロック形式のDSL（同じ動作）：'
+  code_004: |-
+    class ArticleQuery
+      include Rokaki::FilterModel
+
+      # アダプターはデフォルトで接続から自動検出されます。
+      # アプリが複数のアダプターを使用している場合は、db：を明示的に渡します（例：db：：postgres）
+      filter_model :article
+      define_query_key :q
+
+      filter_map do
+        like title: :circumfix, content: :circumfix
+        nested :author do
+          like first_name: :prefix, last_name: :suffix
+          # ネストされたコンテキスト内で等価フィルターを宣言することもできます
+          filters :id
+        end
+      end
+
+      attr_accessor :filters
+      def initialize(filters: {})
+        @filters = filters
+      end
+    end
+
+    # コントローラー/サービス内：
+    filtered = ArticleQuery.new(filters: params).results
+  p_008: 'ここで、`params`には、`q`、`author_first_name`、`author_last_name`などのキーを含めることができます。各キーのLIKEモードは、`like`マッピング（例：`title：：circumfix`）で定義されており、Rokakiは適切な`WHERE`句を安全かつアダプター対応で構築します。'
+  h2_003: マッチングモード
+  ul_003:
+    li_001:
+      text: 'prefix：指定された用語で始まる値に一致します'
+    li_002:
+      text: 'suffix：指定された用語で終わる値に一致します'
+    li_003:
+      text: 'circumfix：指定された用語を含む値に一致します'
+  p_009: すべてのモードは、単一の文字列または用語の配列を受け入れます。
+  h2_004: 0.13.0の新機能
+  ul_004:
+    li_001:
+      text: FilterModelとFilterableの両方でブロック形式のDSLパリティ
+    li_002:
+      text: 'サーカムフィックス接辞の同義語がサポートされています：：parafix、：confix、：ambifix'
+    li_003:
+      text: SQL ServerアダプターのサポートとCIカバレッジ
+    li_004:
+      text: テストヘルパーのすべてのアダプターのENVオーバーライド。スペックのDBブートストラップの改善
+    li_005:
+      text: GitHub Pages経由のドキュメントサイト
+  h2_005: 次のステップ
+  link_004: 使い方
+  link_005: データベースアダプター
+  link_006: 設定
+  ul_005:
+    li_001:
+      text: '[使い方](./usage)で完全なDSLと例を学びます'
+    li_002:
+      text: '[データベースアダプター](./adapters)でアダプター固有の詳細（PostgreSQL / MySQL / SQL Server / Oracle / SQLite）を参照してください'
+    li_003:
+      text: '[設定](./configuration)で接続と環境変数を構成します'
+

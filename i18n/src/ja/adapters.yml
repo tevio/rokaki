@@ -1,0 +1,97 @@
+---
+ja:
+  p_001: Rokakiは、PostgreSQL、MySQL、SQL Server、Oracle、およびSQLite向けに、アダプター対応のSQLを生成します。
+  h2_001: 概要
+  ul_001:
+    li_001:
+      text: PostgreSQL
+      ul_001:
+        li_001:
+          text: '大文字・小文字を区別しない: `ILIKE`'
+        li_002:
+          text: '大文字・小文字を区別する: `LIKE`'
+        li_003:
+          text: '複数条件: `ANY (ARRAY[...])`'
+    li_002:
+      text: MySQL
+      ul_001:
+        li_001:
+          text: '大文字・小文字を区別しない: `LIKE`'
+        li_002:
+          text: '大文字・小文字を区別する: `LIKE BINARY`'
+        li_003:
+          text: ネストされたLIKEフィルターは、ライブラリで設計されている場合、`REGEXP`を使用する場合があります
+    li_003:
+      text: SQL Server
+      ul_001:
+        li_001:
+          text: 安全なエスケープで`LIKE`を使用
+        li_002:
+          text: 複数条件の入力は、ORで連結された述語に展開されます（例：`(col LIKE :q0 OR col LIKE :q1 ...)`）`ESCAPE '\\'`を使用
+        li_003:
+          text: 大文字と小文字の区別は、デフォルトでDB照合順序に従います。将来のバージョンでは、インライン`COLLATE`オプションが追加される可能性があります
+    li_004:
+      text: Oracle
+      ul_001:
+        li_001:
+          text: `LIKE`を使用します。用語の配列はORで連結されます。大文字と小文字を区別しないパスは、`UPPER(column) LIKE UPPER(:q)`を使用します
+    li_005:
+      text: SQLite
+      ul_001:
+        li_001:
+          text: 組み込み（個別のサーバーは不要）
+        li_002:
+          text: `LIKE`を使用します。用語の配列は、述語全体でORで連結されます
+        li_003:
+          text: 大文字と小文字の区別は、SQLiteのデフォルトに従います（通常、ASCIIでは大文字と小文字を区別します）
+  h2_002: LIKEモード
+  p_002: 'すべてのadapterは同じモードをサポートしており、`like`マッピングの値で宣言します（`modes:`オプションはありません）。'
+  ul_002:
+    li_001:
+      text: "`prefix` → `%term`"
+    li_002:
+      text: "`suffix` → `term%`"
+    li_003:
+      text: "`circumfix` → `%term%` (サポートされている同義語: `:parafix`, `:confix`, `:ambifix`)"
+  p_003: '例:'
+  code_001: |-
+    # like-mappingの値でモードを宣言します（ブロックDSLはありません）
+    like title: :circumfix
+    like author: { first_name: :prefix }
+  p_004: 複数の用語の配列を渡すと、Rokakiは、いずれかの用語に一致するadapterに適したSQLを構成します。
+  h2_003: 大文字と小文字の区別に関する注意
+  ul_003:
+    li_001:
+      text: 'PostgreSQL: `ILIKE`は大文字と小文字を区別しません。`LIKE`は照合順序/LC設定によって大文字と小文字を区別しますが、通常はASCIIでは大文字と小文字を区別するものとして扱われます。'
+    li_002:
+      text: 'MySQL: `LIKE`の大文字と小文字の区別は、カラムの照合順序によって異なります。`LIKE BINARY`は、バイト比較を強制します（ASCIIでは大文字と小文字を区別します）。'
+    li_003:
+      text: 'SQL Server: サーバー/データベース/カラムの照合順序によって、区別が決まります。Rokakiは現在、DBのデフォルトに従います。DBのデフォルトに関係なく決定論的な動作が必要な場合は、カラムで大文字と小文字を区別する照合順序を使用するか、インライン`COLLATE`オプションについて話し合うためのissueを開くことを検討してください。'
+  h2_004: バックエンドの自動検出
+  p_005: Rokakiは、一般的なシングルadapterアプリで、モデルのActiveRecord接続からadapterを自動検出します。プロセスで複数のadapterが検出され、adapterを指定しない場合、Rokakiは選択を求める役立つエラーを発生させます。
+  ul_004:
+    li_001:
+      text: 'デフォルト: `db:`は不要です。adapterはモデル接続から推測されます。'
+    li_002:
+      text: '複数のadapterが存在する場合: `filter_model`に`db:`を渡す（または`filter_db`を呼び出す）ことで、1つを明示的に選択します。'
+    li_003:
+      text: '表示される可能性のあるエラー:'
+      ul_001:
+        li_001:
+          text: "`Rokaki::Error: 複数のデータベースadapterが検出されました（...）。db:またはfilter_dbを使用して、使用するバックエンドを宣言してください。`"
+        li_002:
+          text: "`Rokaki::Error: データベースadapterを自動検出できません。モデルが接続されているか、db:を明示的に渡してください。`"
+  h2_005: SQLite
+  p_006: SQLiteは組み込みであり、個別のサーバープロセスは必要ありません。Rokakiは、これをファーストクラスのadapterとして扱います。
+  ul_005:
+    li_001:
+      text: デフォルトのテスト構成では、インメモリデータベースを使用します。
+    li_002:
+      text: LIKEフィルター内の用語の配列は、述語全体でORで連結されます。
+    li_003:
+      text: 大文字と小文字の区別は、SQLiteのデフォルトに従います（通常、ASCIIでは大文字と小文字を区別します）。照合順序はこれに影響を与える可能性があります。
+  p_007: '構成例（テスト）:'
+  code_002: |-
+    adapter: sqlite3
+    database: ":memory:"
+  p_008: データベースファイルをローカルに永続化するには、`SQLITE_DATABASE`をパス（例：`tmp/test.sqlite3`）に設定します。
