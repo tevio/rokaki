@@ -186,3 +186,69 @@ f.__author__location__city      # => 'London'
 Tips:
 - `filter_key_prefix` and `filter_key_infix` control the generated accessor names.
 - Inside the block, `nested :association` affects all `filters` declared within it.
+
+
+## Dynamic runtime listener (no code changes needed)
+
+You can construct a Rokaki filter class at runtime from a payload (e.g., JSON → Hash) and use it immediately — no prior class is required. Rokaki will compile the tiny class on the fly and generate the methods once.
+
+### FilterModel example
+```ruby
+# Example payload (e.g., parsed JSON)
+payload = {
+  model: :article,
+  db: :postgres,        # or :mysql, :sqlserver, :oracle
+  query_key: :q,        # the key in params with search term(s)
+  like: {               # like mappings (deeply nested allowed)
+    title: :circumfix,
+    author: { first_name: :prefix }
+  }
+}
+
+# Build an anonymous class at runtime and use it immediately
+listener = Class.new do
+  include Rokaki::FilterModel
+
+  filter_model payload[:model], db: payload[:db]
+  define_query_key payload[:query_key]
+
+  filter_map do
+    like payload[:like]
+  end
+
+  attr_accessor :filters
+  def initialize(filters: {})
+    @filters = filters
+  end
+end
+
+results = listener.new(filters: { q: ["Ada", "Turing"] }).results
+# => ActiveRecord::Relation
+```
+
+### Filterable example (no SQL)
+```ruby
+mapper = Class.new do
+  include Rokaki::Filterable
+  filter_key_prefix :__
+
+  filter_map do
+    filters :date, author: [:first_name, :last_name]
+  end
+
+  attr_reader :filters
+  def initialize(filters: {})
+    @filters = filters
+  end
+end
+
+m = mapper.new(filters: { date: '2025-01-01', author: { first_name: 'Ada', last_name: 'Lovelace' } })
+m.__date                   # => '2025-01-01'
+m.__author__first_name     # => 'Ada'
+m.__author__last_name      # => 'Lovelace'
+```
+
+Notes:
+- This approach is production‑ready and requires no core changes to Rokaki.
+- You can cache the generated class by a digest of the payload to avoid recompiling.
+- For maximum safety, validate/allow‑list models/columns coming from untrusted payloads.

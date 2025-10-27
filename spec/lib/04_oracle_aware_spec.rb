@@ -6,6 +6,7 @@ require_relative 'filter_model/like_keys_spec'
 require_relative 'filter_model/nested_filter_spec'
 require_relative 'filter_model/filter_map_block_spec'
 require_relative 'filter_model/affix_synonyms_spec'
+require_relative 'dynamic_listener_spec'
 require_relative 'filterable_block_spec'
 
 require 'support/database_manager'

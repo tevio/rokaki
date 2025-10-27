@@ -15,3 +15,10 @@
 
 ### 0.10.0 and earlier
 - Core DSL: Filterable and FilterModel modes, LIKE matching with prefix/suffix/circumfix, nested filters, and adapter-aware SQL for Postgres/MySQL.
+
+### 0.14.1 — 2025-10-25
+- Oracle enabled by default in tests and CI; added Oracle service and Instant Client install in GitHub Actions (Ubuntu 24.04: use libaio1t64, Instant Client ZIP install).
+- Removed `ORACLE_ENABLED` flag from runner; Oracle suite runs in `./spec/ordered_run.sh` by default.
+- ActiveRecord 8 support: relaxed dev dependency to `>= 7.1, < 9.0`.
+- Added dynamic runtime listener tests (anonymous classes) across all adapters and documentation section.
+- Simplified README with concise overview and links to GitHub Pages; moved legacy content to `README.legacy.md`.
