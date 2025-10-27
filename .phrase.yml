@@ -3,33 +3,33 @@
 # Required GitHub Secret: PHRASE_ACCESS_TOKEN. Optional: PHRASE_API_HOST. Project ID is configured below.
 
 phrase:
-  file_format: markdown
+  file_format: yml
   project_id: 60bafc9e7c0eba56c3278bd72d348fd3
 
   push:
     sources:
       # Core docs pages (English source of truth)
-      - file: ./docs/index.md
+      - file: ./i18n/src/en/index.yml
         params:
-          file_format: markdown
+          file_format: yml
           locale_id: en
           tags: docs, site, doc:index
           update_translations: true
-      - file: ./docs/usage.md
+      - file: ./i18n/src/en/usage.yml
         params:
-          file_format: markdown
+          file_format: yml
           locale_id: en
           tags: docs, site, doc:usage
           update_translations: true
-      - file: ./docs/adapters.md
+      - file: ./i18n/src/en/adapters.yml
         params:
-          file_format: markdown
+          file_format: yml
           locale_id: en
           tags: docs, site, doc:adapters
           update_translations: true
-      - file: ./docs/configuration.md
+      - file: ./i18n/src/en/configuration.yml
         params:
-          file_format: markdown
+          file_format: yml
           locale_id: en
           tags: docs, site, doc:configuration
           update_translations: true
