@@ -1,3 +1,9 @@
+### 0.15.0 — 2025-10-27
+- Add first-class SQLite support: adapter-aware LIKE behavior with OR expansion for arrays.
+- Added SQLite badge in README.
+- Updated documentation: adapters, configuration, index and usage; noted SQLite default in-memory config and env override `SQLITE_DATABASE`.
+- Internal: introduced `generic_like` helper for generic adapters (used by SQLite); no breaking changes for other adapters.
+
 ### 0.13.0 — 2025-10-25
 - Add block-form DSL parity across both FilterModel and Filterable (`filter_map do ... end` with `like`, `ilike`, `nested`, and `filters`).
 - Support circumfix affix synonyms: `:parafix`, `:confix`, `:ambifix` (treated as `:circumfix`).

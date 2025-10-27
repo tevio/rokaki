@@ -222,12 +222,25 @@ module Rokaki
             leaf: leaf
           )
 
-          if join_map.empty?
-            filter_query = "@model.#{query}"
-          elsif join_map.is_a?(Array)
-            filter_query = "@model.joins(*#{join_map}).#{query}"
+          # Compose filter_query based on adapter; for generic adapters use generic_like to support array values
+          if db == :postgres || db == :mysql
+            if join_map.empty?
+              filter_query = "@model.#{query}"
+            elsif join_map.is_a?(Array)
+              filter_query = "@model.joins(*#{join_map}).#{query}"
+            else
+              filter_query = "@model.joins(**#{join_map}).#{query}"
+            end
           else
-            filter_query = "@model.joins(**#{join_map}).#{query}"
+            # Generic (e.g., SQLite)
+            if join_map.empty?
+              rel_expr = "@model"
+            elsif join_map.is_a?(Array)
+              rel_expr = "@model.joins(*#{join_map})"
+            else
+              rel_expr = "@model.joins(**#{join_map})"
+            end
+            filter_query = "generic_like(#{rel_expr}, \"#{key_leaf}\", \"#{type.to_s.upcase}\", #{filter_name}, :#{search_mode})"
           end
         end
 
@@ -247,17 +260,9 @@ module Rokaki
         elsif db == :mysql
           query = "where(\"#{key_leaf} #{type.to_s.upcase} :query\", "
           query += "query: prepare_regex_terms(#{filter}, :#{search_mode}))"
-        else # :sqlserver and others
-          query = "where(\"#{key_leaf} #{type.to_s.upcase} :query\", "
-          if search_mode == :circumfix
-            query += "query: \"%\#{#{filter}}%\")"
-          elsif search_mode == :prefix
-            query += "query: \"%\#{#{filter}}\")"
-          elsif search_mode == :suffix
-            query += "query: \"\#{#{filter}}%\")"
-          else
-            query += "query: \"%\#{#{filter}}%\")"
-          end
+        else # generic adapters (e.g., SQLite): delegate to generic_like to support array values via OR
+          # We return a marker here; the caller (build_query) will assemble the full expression with joins
+          query = nil
         end
 
         query

@@ -11,7 +11,7 @@ This page shows how to use Rokaki to define filters and apply them to ActiveReco
 Add the gem to your Gemfile and bundle:
 
 ```ruby
-gem "rokaki", "~> 0.13"
+gem "rokaki", "~> 0.15"
 ```
 
 ```bash
@@ -32,7 +32,7 @@ class ArticleQuery
   belongs_to :author
 
   # Choose model and adapter
-  filter_model :article, db: :postgres # or :mysql, :sqlserver
+  filter_model :article, db: :postgres # or :mysql, :sqlserver, :oracle, :sqlite
 
   # Map a single query key (:q) to multiple LIKE targets
   define_query_key :q

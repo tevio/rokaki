@@ -90,6 +90,24 @@ module Rokaki
       end
     end
 
+    # Compose a generic LIKE relation supporting arrays of terms (OR chained)
+    # Used for adapters without special handling (e.g., SQLite)
+    def generic_like(model, column, type, value, mode)
+      terms = prepare_terms(value, mode)
+      return model.none if terms.nil?
+      if terms.is_a?(Array)
+        return model.none if terms.empty?
+        rel = model.where("#{column} #{type} :q0", q0: terms[0])
+        terms[1..-1]&.each_with_index do |t, i|
+          rel = rel.or(model.where("#{column} #{type} :q#{i + 1}", "q#{i + 1}".to_sym => t))
+        end
+        rel
+      else
+        # prepare_terms returns arrays for scalar input, so this branch is rarely used
+        model.where("#{column} #{type} :q", q: terms)
+      end
+    end
+
     def prepare_regex_terms(param, mode)
       if Array === param
         param_map = param.map { |term| ".*#{term}.*" } if mode == :circumfix

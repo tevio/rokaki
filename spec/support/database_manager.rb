@@ -32,6 +32,9 @@ class DatabaseManager
       @database_config['password'] = ENV['ORACLE_PASSWORD'] if ENV['ORACLE_PASSWORD']
       @database_config['database'] = ENV['ORACLE_DATABASE'] if ENV['ORACLE_DATABASE']
       @database_config['service_name'] = ENV['ORACLE_SERVICE_NAME'] if ENV['ORACLE_SERVICE_NAME']
+    when 'sqlite3'
+      # SQLite ENV override; default to in-memory for tests
+      @database_config['database'] = ENV['SQLITE_DATABASE'] if ENV['SQLITE_DATABASE']
     end
     # p @database_config
   end

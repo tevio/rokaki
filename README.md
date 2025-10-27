@@ -9,8 +9,9 @@ Supported backends:
 [![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white)](https://github.com/tevio/rokaki/actions/workflows/spec.yml)
 [![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?logo=microsoft-sql-server&logoColor=white)](https://github.com/tevio/rokaki/actions/workflows/spec.yml)
 [![Oracle](https://img.shields.io/badge/Oracle-F80000?logo=oracle&logoColor=white)](https://github.com/tevio/rokaki/actions/workflows/spec.yml)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://github.com/tevio/rokaki/actions/workflows/spec.yml)
 
-Rokaki is a small DSL for building safe, composable filters for ActiveRecord queries — without writing SQL. It maps incoming params to predicates on models and associations and works across PostgreSQL, MySQL, SQL Server, and Oracle.
+Rokaki is a small DSL for building safe, composable filters for ActiveRecord queries — without writing SQL. It maps incoming params to predicates on models and associations and works across PostgreSQL, MySQL, SQL Server, Oracle, and SQLite.
 
 - Works with ActiveRecord 7.1 and 8.x
 - LIKE modes: `:prefix`, `:suffix`, `:circumfix` (+ synonyms) and array‑of‑terms
