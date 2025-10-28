@@ -81,7 +81,7 @@ module Rokaki
           end
         end
 
-        it "supports top-level between via Array [from,to] on article.published" do
+        it "treats Array as equality list (IN) for article.published" do
           klass = build_listener_with_ranges(:article)
           a1.update!(published: t1)
           a2.update!(published: t2)

@@ -5,6 +5,7 @@ permalink: /usage
 ---
 
 This page shows how to use Rokaki to define filters and apply them to ActiveRecord relations.
+For a formal description of the mapping DSL and how payloads are interpreted (join structure vs leaf-level keys), see Rokaki's DSL Syntax: [/dsl-syntax](/dsl-syntax).
 
 ## Installation
 
@@ -93,7 +94,7 @@ Preferred syntax: use the field name as the key and the filter type as a sub-key
 
 Accepted value shapes for `between` (also works when you pass a range directly as the field value):
 - Ruby `Range`: `1..10`, `Time.utc(2024,1,1)..Time.utc(2024,12,31)`
-- Two-element `Array`: `[from, to]`
+- Two-element `Array`: `[from, to]` (only when wrapped with `{ between: [...] }`)
 - Hash with aliases: `{ from:, to: }`, `{ since:, until: }`, `{ after:, before: }`, `{ start:, end: }`
 
 Examples (top-level field):

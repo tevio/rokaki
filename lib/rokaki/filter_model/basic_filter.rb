@@ -123,10 +123,10 @@ module Rokaki
                   # Fall back to equality with the original hash
                   @model.where(#{key}: _val)
                 end
-              elsif _val.is_a?(Range) || (_val.is_a?(Array) && _val.size == 2)
+              elsif _val.is_a?(Range)
                 #{build_between_query(filter: filter, key: key)}
               else
-                # Equality and IN semantics for arrays and scalars
+                # Equality and IN semantics for arrays and scalars (Arrays are always IN lists)
                 @model.where(#{key}: _val)
               end
             end

@@ -34,10 +34,9 @@ RSpec.shared_examples "FilterModel::RangeFilters" do |selected_db|
       expect(results).not_to include(article_3)
     end
 
-    it 'supports between via Array [from, to]' do
-      results = klass.new(filters: { published: [Time.utc(2024, 5, 1), Time.utc(2024, 12, 1)] }).results
-      expect(results).to include(article_2)
-      expect(results).not_to include(article_1)
+    it 'treats Array as equality list (IN) on the field' do
+      results = klass.new(filters: { published: [a1_published, a2_published] }).results
+      expect(results).to include(article_1, article_2)
       expect(results).not_to include(article_3)
     end
 

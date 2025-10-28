@@ -94,5 +94,5 @@ Adapter notes:
 
 Tips:
 - For date-only upper bounds (e.g., `2024-12-31`), Rokaki treats them inclusively and, when applicable, will extend to the end of day in basic filters to match expectations. If you need precise control, pass explicit `Time` values.
-- Arrays with more than two elements are treated as equality lists (`IN (?)`). Use `{ between: [from, to] }` for ranges.
+- Arrays are treated as equality lists (`IN (?)`) across all adapters. Use a `Range` or `{ between: [from, to] }` for range filtering.
 - `nil` bounds are ignored: only the provided side is applied.
