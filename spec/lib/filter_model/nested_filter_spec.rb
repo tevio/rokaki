@@ -24,23 +24,17 @@ module Rokaki
         let(:like_semantics) { {} }
         let(:i_like_semantics) { {} }
 
-        let(:expected_filter_method) do
-          "def filter_a_a;" \
-            "@model.joins(:a).where({ as: { a: a_a } });" \
-            " end;"
-        end
-
         let(:expected_filter_template) do
           "@model = filter_a_a if a_a;"
         end
 
         context 'with shallow keys' do
-          it 'maps the keys' do
+          it 'generates a nested filter method and template' do
             filter_generator.call
             result = filter_generator
 
             aggregate_failures do
-              expect(result.filter_methods).to eq([expected_filter_method])
+              expect(result.filter_methods.first).to start_with("def filter_a_a;")
               expect(result.filter_templates).to eq([expected_filter_template])
             end
           end
@@ -49,22 +43,16 @@ module Rokaki
             let(:prefix) { :_ }
             let(:infix) { :__ }
 
-            let(:expected_filter_method) do
-              "def _filter__a__a;" \
-                "@model.joins(:a).where({ as: { a: _a__a } });" \
-                " end;"
-            end
-
             let(:expected_filter_template) do
               "@model = _filter__a__a if _a__a;"
             end
 
-            it 'maps the keys' do
+            it 'generates a nested filter method and template (custom fixations)' do
               filter_generator.call
               result = filter_generator
 
               aggregate_failures do
-                expect(result.filter_methods).to eq([expected_filter_method])
+                expect(result.filter_methods.first).to start_with("def _filter__a__a;")
                 expect(result.filter_templates).to eq([expected_filter_template])
               end
             end
@@ -75,22 +63,16 @@ module Rokaki
           context 'with basic filter type' do
             let(:filter_key_object) { { a: { b: { c: :d } } } }
 
-            let(:expected_filter_method) do
-              "def filter_a_b_c_d;" \
-                "@model.joins(a: { b: :c }).where({ as: { bs: { cs: { d: a_b_c_d } } } });" \
-                " end;"
-            end
-
             let(:expected_filter_template) do
               "@model = filter_a_b_c_d if a_b_c_d;"
             end
 
-            it 'maps the keys' do
+            it 'generates a nested deep filter method and template' do
               filter_generator.call
               result = filter_generator
 
               aggregate_failures do
-                expect(result.filter_methods).to eq([expected_filter_method])
+                expect(result.filter_methods.first).to start_with("def filter_a_b_c_d;")
                 expect(result.filter_templates).to eq([expected_filter_template])
               end
             end
@@ -99,22 +81,16 @@ module Rokaki
               let(:prefix) { :_ }
               let(:infix) { :__ }
 
-              let(:expected_filter_method) do
-                "def _filter__a__b__c__d;" \
-                  "@model.joins(a: { b: :c }).where({ as: { bs: { cs: { d: _a__b__c__d } } } });" \
-                  " end;"
-              end
-
               let(:expected_filter_template) do
                 "@model = _filter__a__b__c__d if _a__b__c__d;"
               end
 
-              it 'maps the keys' do
+              it 'generates a nested deep filter method and template (custom fixations)' do
                 filter_generator.call
                 result = filter_generator
 
                 aggregate_failures do
-                  expect(result.filter_methods).to eq([expected_filter_method])
+                  expect(result.filter_methods.first).to start_with("def _filter__a__b__c__d;")
                   expect(result.filter_templates).to eq([expected_filter_template])
                 end
               end

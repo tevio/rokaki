@@ -3,13 +3,16 @@
 module Rokaki
   module FilterModel
     class BasicFilter
-      def initialize(keys:, prefix:, infix:, like_semantics:, i_like_semantics:, db:)
+      def initialize(keys:, prefix:, infix:, like_semantics:, i_like_semantics:, db:, between_keys: nil, min_keys: nil, max_keys: nil)
         @keys = keys
         @prefix = prefix
         @infix = infix
         @like_semantics = like_semantics
         @i_like_semantics = i_like_semantics
         @db = db
+        @between_keys = Array(between_keys).compact
+        @min_keys = Array(min_keys).compact
+        @max_keys = Array(max_keys).compact
         @filter_query = nil
       end
       attr_reader :keys, :prefix, :infix, :like_semantics, :i_like_semantics, :db, :filter_query
@@ -83,10 +86,112 @@ module Rokaki
             key: key
           )
         else
-          query = "@model.where(#{key}: #{filter})"
+          # New preferred style: field => { between:/from:/to:/min:/max: }
+          # Also accept direct Range/Array/Hash with from/to aliases.
+          query = <<-RUBY
+            begin
+              _val = #{filter}
+              if _val.is_a?(Hash)
+                # Support wrapper keys like :between as well as bound aliases/min/max
+                _inner = _val
+                if _val.key?(:between) || _val.key?('between')
+                  _inner = _val[:between] || _val['between']
+                end
+                _from = _inner[:from] || _inner['from'] || _inner[:since] || _inner['since'] || _inner[:after] || _inner['after'] || _inner[:start] || _inner['start'] || _inner[:min] || _inner['min']
+                _to   = _inner[:to]   || _inner['to']   || _inner[:until] || _inner['until'] || _inner[:before] || _inner['before'] || _inner[:end]   || _inner['end']   || _inner[:max] || _inner['max']
+
+                if _from.nil? && _to.nil?
+                  # If hash contains range-like but with different container (e.g., { between: range })
+                  if _inner.is_a?(Range)
+                    _from = _inner.begin; _to = _inner.end
+                  elsif _inner.is_a?(Array)
+                    _from, _to = _inner[0], _inner[1]
+                  end
+                end
+
+                # Adjust inclusive end-of-day behavior if upper bound appears to be a date or midnight time
+                if !_to.nil? && (_to.is_a?(Date) && !_to.is_a?(DateTime) || (_to.respond_to?(:hour) && _to.hour == 0 && _to.min == 0 && _to.sec == 0))
+                  _to = (_to.respond_to?(:to_time) ? _to.to_time : _to) + 86399
+                end
+                if !_from.nil? && !_to.nil?
+                  @model.where("#{key} BETWEEN :from AND :to", from: _from, to: _to)
+                elsif !_from.nil?
+                  @model.where("#{key} >= :from", from: _from)
+                elsif !_to.nil?
+                  @model.where("#{key} <= :to", to: _to)
+                else
+                  # Fall back to equality with the original hash
+                  @model.where(#{key}: _val)
+                end
+              elsif _val.is_a?(Range)
+                #{build_between_query(filter: filter, key: key)}
+              else
+                # Equality and IN semantics for arrays and scalars (Arrays are always IN lists)
+                @model.where(#{key}: _val)
+              end
+            end
+          RUBY
         end
 
         @filter_query = query
+      end
+
+      def build_between_query(filter:, key:)
+        # Accept [from, to], Range, or {from:, to:}
+        # Build appropriate where conditions with bound params
+        <<-RUBY
+          begin
+            _val = #{filter}
+            _from = _to = nil
+            if _val.is_a?(Range)
+              _from = _val.begin
+              _to = _val.end
+            elsif _val.is_a?(Array)
+              _from, _to = _val[0], _val[1]
+            elsif _val.is_a?(Hash)
+              # allow aliases for from/to
+              _from = _val[:from] || _val['from'] || _val[:since] || _val['since'] || _val[:after] || _val['after'] || _val[:start] || _val['start']
+              _to   = _val[:to]   || _val['to']   || _val[:until] || _val['until'] || _val[:before] || _val['before'] || _val[:end]   || _val['end']
+            else
+              # single value → equality
+              return @model.where(#{key}: _val)
+            end
+
+            if !_from.nil? && !_to.nil?
+              @model.where("#{key} BETWEEN :from AND :to", from: _from, to: _to)
+            elsif !_from.nil?
+              @model.where("#{key} >= :from", from: _from)
+            elsif !_to.nil?
+              @model.where("#{key} <= :to", to: _to)
+            else
+              @model
+            end
+          end
+        RUBY
+      end
+
+      def parse_range_semantics(key)
+        k = key.to_s
+        %w[_between _min _max _from _to _after _before _since _until _start _end].each do |suf|
+          if k.end_with?(suf)
+            base = k.sub(/#{Regexp.escape(suf)}\z/, '')
+            op = case suf
+                 when '_between' then :between
+                 when '_min' then :min
+                 when '_max' then :max
+                 when '_from','_after','_since','_start' then :from
+                 when '_to','_before','_until','_end' then :to
+                 else nil
+                 end
+            return [base, op]
+          end
+        end
+        [nil, nil]
+      end
+
+      def build_compare_query(op:, filter:, column:)
+        operator = (op == :'>=') ? '>=' : '<='
+        %Q{@model.where("#{column} #{operator} :v", v: #{filter})}
       end
 
       # # @model.where('`authors`.`first_name` LIKE BINARY :query', query: "%teev%").or(@model.where('`authors`.`first_name` LIKE BINARY :query', query: "%imi%"))

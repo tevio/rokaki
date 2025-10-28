@@ -129,21 +129,17 @@ module Rokaki
           where_after.push(" }")
         end
 
-        joins = joins_before + joins_after
+        joins_arr = joins_before + joins_after
+        joins_str = joins_arr.join
 
         name += "#{leaf}"
-        where_middle = ["{ #{leaf}: #{prefix}#{name} }"]
-
-        where = where_before + where_middle + where_after
-        joins = joins.join
-        where = where.join
 
         if search_mode
           if db == :sqlserver || db == :oracle
             key_leaf = "#{keys.last.to_s.pluralize}.#{leaf}"
             helper = db == :sqlserver ? 'sqlserver_like' : 'oracle_like'
             @filter_methods << "def #{prefix}filter#{infix}#{name};"\
-              "#{helper}(@model.joins(#{joins}), \"#{key_leaf}\", \"#{type}\", #{prefix}#{name}, :#{search_mode}); end;"
+              "#{helper}(@model.joins(#{joins_str}), \"#{key_leaf}\", \"#{type}\", #{prefix}#{name}, :#{search_mode}); end;"
 
             @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
           else
@@ -157,14 +153,51 @@ module Rokaki
             )
 
             @filter_methods << "def #{prefix}filter#{infix}#{name};"\
-              "@model.joins(#{joins}).#{query}; end;"
+              "@model.joins(#{joins_str}).#{query}; end;"
 
             @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
           end
         else
-          @filter_methods << "def #{prefix}filter#{infix}#{name};"\
-            "@model.joins(#{joins}).where(#{where}); end;"
-
+          # Preferred: value Hash with sub-keys between/from/to/min/max; also accept Range/Array directly
+          qualified_col = "#{keys.last.to_s.pluralize}.#{leaf}"
+          body = <<-RUBY
+            begin
+              _val = #{prefix}#{name}
+              rel = @model.joins(#{joins_str})
+              if _val.is_a?(Hash)
+                _inner = _val
+                if _val.key?(:between) || _val.key?('between')
+                  _inner = _val[:between] || _val['between']
+                end
+                _from = _inner[:from] || _inner['from'] || _inner[:since] || _inner['since'] || _inner[:after] || _inner['after'] || _inner[:start] || _inner['start'] || _inner[:min] || _inner['min']
+                _to   = _inner[:to]   || _inner['to']   || _inner[:until] || _inner['until'] || _inner[:before] || _inner['before'] || _inner[:end]   || _inner['end']   || _inner[:max] || _inner['max']
+                if _from.nil? && _to.nil?
+                  if _inner.is_a?(Range)
+                    _from = _inner.begin; _to = _inner.end
+                  elsif _inner.is_a?(Array)
+                    _from, _to = _inner[0], _inner[1]
+                  end
+                end
+                if !_from.nil? && !_to.nil?
+                  rel.where("#{qualified_col} BETWEEN :from AND :to", from: _from, to: _to)
+                elsif !_from.nil?
+                  rel.where("#{qualified_col} >= :from", from: _from)
+                elsif !_to.nil?
+                  rel.where("#{qualified_col} <= :to", to: _to)
+                else
+                  rel.where("#{qualified_col} = :v", v: _val)
+                end
+              elsif _val.is_a?(Range)
+                rel.where("#{qualified_col} BETWEEN :from AND :to", from: _val.begin, to: _val.end)
+              elsif _val.is_a?(Array)
+                # Arrays represent IN semantics for equality; use BETWEEN only when explicitly wrapped via :between
+                rel.where("#{qualified_col} IN (?)", _val)
+              else
+                rel.where("#{qualified_col} = :v", v: _val)
+              end
+            end
+          RUBY
+          @filter_methods << "def #{prefix}filter#{infix}#{name};#{body}; end;"
           @filter_templates << "@model = #{prefix}filter#{infix}#{name} if #{prefix}#{name};"
         end
       end
@@ -180,6 +213,25 @@ module Rokaki
         end
 
         query
+      end
+
+      def parse_range_semantics(key)
+        k = key.to_s
+        %w[_between _min _max _from _to _after _before _since _until _start _end].each do |suf|
+          if k.end_with?(suf)
+            base = k.sub(/#{Regexp.escape(suf)}\z/, '')
+            op = case suf
+                 when '_between' then :between
+                 when '_min' then :from   # min → lower bound
+                 when '_max' then :to     # max → upper bound
+                 when '_from','_after','_since','_start' then :from
+                 when '_to','_before','_until','_end' then :to
+                 else nil
+                 end
+            return [base, op]
+          end
+        end
+        [nil, nil]
       end
 
     end

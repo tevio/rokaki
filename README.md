@@ -38,6 +38,25 @@ Docs
 
 Tip: For a dynamic runtime listener (build a filter class from a JSON/hash payload at runtime), see “Dynamic runtime listener” in the Usage docs.
 
+## Range filters (between/min/max)
+
+Use the field name as the key and the filter type as a sub-key, or pass a `Range` directly. Aliases are supported.
+
+```ruby
+# Top-level
+Article.filter(published: { from: Date.new(2024,1,1), to: Date.new(2024,12,31) })
+Article.filter(published: (Date.new(2024,1,1)..Date.new(2024,12,31)))
+
+# Nested
+Article.filter(reviews_published: { max: Time.utc(2024,6,30) })
+```
+
+- Lower bound aliases (>=): `from`, `since`, `after`, `start`, `min`
+- Upper bound aliases (<=): `to`, `until`, `before`, `end`, `max`
+- Arrays always mean `IN (?)` for equality. Use a `Range` or `{ between: [from, to] }` for range filtering
+
+See full docs: https://tevio.github.io/rokaki/usage#range-between-min-and-max-filters
+
 ---
 
 ## Further reading

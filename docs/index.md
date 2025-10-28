@@ -14,6 +14,7 @@ Rokaki is a small Ruby library that helps you build safe, composable filters for
 
 Get started below or jump to:
 - [Usage](./usage)
+- [Rokaki's DSL Syntax](./dsl-syntax)
 - [Database adapters](./adapters)
 - [Configuration](./configuration)
 

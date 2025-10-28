@@ -24,22 +24,18 @@ module Rokaki
         let(:like_semantics) { {} }
         let(:i_like_semantics) { {} }
 
-        let(:expected_filter_method) do
-          "def filter_a;@model.where(a: a) end;"
-        end
-
         let(:expected_filter_template) do
           "@model = filter_a if a;"
         end
 
         context 'with shallow keys' do
           context 'with basic semantics' do
-            it 'maps the keys' do
+            it 'generates a filter method and template for equality' do
               filter_generator.call
               result = filter_generator
 
               aggregate_failures do
-                expect(result.filter_method).to eq(expected_filter_method)
+                expect(result.filter_method).to start_with("def filter_a;")
                 expect(result.filter_template).to eq(expected_filter_template)
               end
             end

@@ -1,4 +1,5 @@
 ### Unreleased
+- Documentation: Added comprehensive Range/BETWEEN/MIN/MAX filter docs across README and site (usage, adapters). Clarified sub-key aliases (`between`, `from`/`since`/`after`/`start`/`min`, `to`/`until`/`before`/`end`/`max`), accepted value shapes (Range, 2‑element Array, Hash), nested examples, and equality array semantics (`IN` vs `BETWEEN`).
 - Documentation: Added backend auto‑detection feature docs across README and site (index, usage, adapters, configuration). Examples now prefer auto‑detection by default and explain explicit overrides and ambiguity errors.
 - Tests: Added shared examples to exercise auto‑detection behavior under each adapter suite.
 
