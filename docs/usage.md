@@ -82,21 +82,21 @@ Each accepts a single string or an array of strings. Rokaki generates adapter‑
 
 ## Range, BETWEEN, MIN, and MAX filters
 
-Rokaki supports range-style filters as normal filters (not aggregates) across all adapters.
+Rokaki supports range-style filters as normal filters (not aggregates) across all adapters. You don’t have to declare special operators per field — the value shape (and optional sub-keys) drive the behavior.
 
 Preferred syntax: use the field name as the key and the filter type as a sub-key. Aliases are supported.
 
 - Sub-keys:
   - `between` → interpret the value as a range and generate `BETWEEN`/`>=`/`<=` as appropriate
-  - Lower bound: `from`, `since`, `after`, `start`, `min` → `>=`
-  - Upper bound: `to`, `until`, `before`, `end`, `max` → `<=`
+  - Lower bound aliases → `>=`: `from`, `since`, `after`, `start`, `min`
+  - Upper bound aliases → `<=`: `to`, `until`, `before`, `end`, `max`
 
-- Accepted value shapes for `between` (and also when you pass a range directly as the field value):
-  - Ruby `Range`: `1..10`, `Time.parse('2024-01-01')..Time.parse('2024-12-31')`
-  - Two-element `Array`: `[from, to]`
-  - Hash with aliases: `{ from:, to: }`, `{ since:, until: }`, `{ after:, before: }`, `{ start:, end: }`
+Accepted value shapes for `between` (also works when you pass a range directly as the field value):
+- Ruby `Range`: `1..10`, `Time.utc(2024,1,1)..Time.utc(2024,12,31)`
+- Two-element `Array`: `[from, to]`
+- Hash with aliases: `{ from:, to: }`, `{ since:, until: }`, `{ after:, before: }`, `{ start:, end: }`
 
-Examples:
+Examples (top-level field):
 
 ```ruby
 class ArticleQuery
@@ -104,60 +104,58 @@ class ArticleQuery
   filter_model :article
 
   # equality filters (existing)
-  filters :author_id
+  filters :author_id, :published
 
   # LIKEs (existing)
   define_query_key :q
   like title: :circumfix
-
-  # No special declarations required for range filters
 end
 
-# Params usage (top-level field)
-Article.filter(
-  published: { between: Date.new(2024,1,1)..Date.new(2024,12,31) }
-)
+# Between with a Range
+Article.filter(published: Date.new(2024,1,1)..Date.new(2024,12,31))
 
-Article.filter(
-  published: { from: Date.new(2024,1,1), to: Date.new(2024,12,31) }
-)
+# Between with a Hash + aliases
+Article.filter(published: { from: Date.new(2024,1,1), to: Date.new(2024,12,31) })
+Article.filter(published: { since: Date.new(2024,1,1), until: Date.new(2024,6,30) })
 
-Article.filter(
-  published: { since: Date.new(2024,1,1), until: Date.new(2024,6,30) }
-)
+# Open-ended bounds
+Article.filter(published: { min: Date.new(2024,1,1) })   # >= 2024-01-01
+Article.filter(published: { max: Date.new(2024,12,31) }) # <= 2024-12-31
 
-Article.filter(
-  published: { min: Date.new(2024,1,1) }
-)
-
-Article.filter(
-  published: { max: Date.new(2024,12,31) }
-)
-
-# You can also pass a Range directly without a sub-key
-Article.filter(
-  published: Date.new(2024,1,1)..Date.new(2024,12,31)
-)
+# Between with a two-element Array
+Article.filter(published: [Date.new(2024,5,1), Date.new(2024,12,1)])
 ```
 
-- Nested contexts use the same sub-keys:
+Nested fields use the same sub-keys and value shapes:
 
 ```ruby
-filter_map do
-  nested :author do
-    # Declare equality/like filters as usual; range filters are value-driven
-    like :first_name, key: :author_first
-    filters :created_at # enabling param key author_created_at
+class ArticleQuery
+  include Rokaki::FilterModel
+  filter_model :article
+
+  filter_map do
+    nested :author do
+      # Range filters are value-driven; declaring the field enables the param key
+      filters :created_at   # enables :author_created_at
+    end
+
+    nested :reviews do
+      filters :published    # enables :reviews_published
+    end
   end
 end
 
-# Params
-# { author_created_at: { from: ..., to: ... } }
+# Params examples
+Article.filter(author_created_at: { from: Time.utc(2024,1,1), to: Time.utc(2024,6,30) })
+Article.filter(reviews_published: (Time.utc(2024,1,1)..Time.utc(2024,6,30)))
 ```
 
-Notes:
+Behavior notes:
 - `min`/`max` are interpreted as lower/upper bounds, not aggregate functions.
-- Passing a `Range`/two-element `Array`/range-shaped `Hash` directly as the field value is treated as a between filter automatically.
+- Passing a `Range` or two-element `Array` directly as the field value is treated as a between filter automatically.
+- Arrays with more than two elements are treated as equality lists (`IN (?)`) — use `{ between: [...] }` if you intend a range.
+- `nil` bounds are ignored: only the provided side is applied (e.g., `{ from: t }` becomes `>= t`).
+- All generated predicates are parameterized and adapter‑agnostic (`BETWEEN`, `>=`, `<=`).
 
 ## Nested filters
 

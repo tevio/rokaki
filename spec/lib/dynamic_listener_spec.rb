@@ -45,6 +45,70 @@ module Rokaki
         expect(results).not_to include(a2, a3, a4)
       end
 
+      context "range filters with dynamic listener" do
+        let!(:t1) { Time.utc(2024,1,1,12,0,0) }
+        let!(:t2) { Time.utc(2024,6,1,12,0,0) }
+        let!(:t3) { Time.utc(2024,12,31,12,0,0) }
+
+        let!(:r_a1) { Review.create!(title: 'R-A1', content: 'x', published: t1 + 9*24*3600, article: a1) }
+        let!(:r_a2) { Review.create!(title: 'R-A2', content: 'y', published: t2 + 9*24*3600, article: a2) }
+        let!(:r_a3) { Review.create!(title: 'R-A3', content: 'z', published: t3, article: a3) }
+
+        def build_listener_with_ranges(model_sym)
+          Class.new do
+            include Rokaki::FilterModel
+            filter_key_prefix :__
+            filter_model model_sym, db: :sqlite # db overridden by selected_db when instantiated via payload paths below
+            define_query_key :q
+            filter_map do
+              # enable fields to use range-style values at runtime
+              if model_sym == :article
+                filters :published
+                nested :reviews do
+                  filters :published
+                end
+              else
+                # author with deep nested path: articles -> reviews.published
+                nested :articles do
+                  nested :reviews do
+                    filters :published
+                  end
+                end
+              end
+            end
+            attr_accessor :filters
+            def initialize(filters: {}) ; @filters = filters ; end
+          end
+        end
+
+        it "supports top-level between via Array [from,to] on article.published" do
+          klass = build_listener_with_ranges(:article)
+          a1.update!(published: t1)
+          a2.update!(published: t2)
+          a3.update!(published: t3)
+          res = klass.new(filters: { published: [t1, t2] }).results
+          expect(res).to include(a1, a2)
+          expect(res).not_to include(a4)
+        end
+
+        it "supports deep nested between via Range on author.articles.reviews.published" do
+          klass = build_listener_with_ranges(:author)
+          # Expect authors that have at least one review in range [t1..t2]
+          res = klass.new(filters: { articles: { reviews: { published: (t1..t2) } } }).results
+          # ada has reviews r_a1 and r_a2 within range (through a1/a2)
+          expect(res).to include(ada)
+          # alan has r_a3 outside range, so excluded
+          expect(res).not_to include(alan)
+        end
+
+        it "supports nested upper bound via max on article.reviews.published" do
+          klass = build_listener_with_ranges(:article)
+          res = klass.new(filters: { reviews: { published: { max: t2 } } }).results
+          expect(res).to include(a1, a2)
+          expect(res).not_to include(a3, a4)
+        end
+      end
+
       it "handles multiple payloads sequentially and returns different result sets" do
         # Payload A: match titles containing 'Article'
         payload_a = {

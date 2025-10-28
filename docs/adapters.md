@@ -22,6 +22,7 @@ Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle, 
   - Case sensitivity follows DB collation by default; future versions may add inline `COLLATE` options
 - Oracle
   - Uses `LIKE`; arrays of terms are OR‑chained; case‑insensitive paths use `UPPER(column) LIKE UPPER(:q)`
+  - See the dedicated page: [Oracle connections](/adapters/oracle) for connection strings, NLS settings, and common errors.
 - SQLite
   - Embedded (no separate server needed)
   - Uses `LIKE`; arrays of terms are OR‑chained across predicates
@@ -78,3 +79,20 @@ database: ":memory:"
 ```
 
 To persist a database file locally, set `SQLITE_DATABASE` to a path (e.g., `tmp/test.sqlite3`).
+
+
+## Range/BETWEEN filters
+
+Rokaki’s range filters (`between`, lower-bound aliases like `from`/`min`, and upper-bound aliases like `to`/`max`) are adapter‑agnostic. The library always generates parameterized predicates using `BETWEEN`, `>=`, and `<=` on the target column.
+
+Adapter notes:
+- PostgreSQL: Uses regular `WHERE column BETWEEN $1 AND $2` (or `>=`/`<=`). No special handling is required.
+- MySQL/MariaDB: Uses `BETWEEN ? AND ?` (or `>=`/`<=`). Datetime values are compared with the column precision configured by your schema.
+- SQLite: Uses `BETWEEN ? AND ?` (or `>=`/`<=`).
+- SQL Server: Uses `BETWEEN @from AND @to` (or `>=`/`<=`). Parameters are bound via ActiveRecord.
+- Oracle: Uses `BETWEEN :from AND :to` (or `>=`/`<=`). If your column type is `DATE`, be aware it has second precision; `TIMESTAMP` supports fractional seconds.
+
+Tips:
+- For date-only upper bounds (e.g., `2024-12-31`), Rokaki treats them inclusively and, when applicable, will extend to the end of day in basic filters to match expectations. If you need precise control, pass explicit `Time` values.
+- Arrays with more than two elements are treated as equality lists (`IN (?)`). Use `{ between: [from, to] }` for ranges.
+- `nil` bounds are ignored: only the provided side is applied.
