@@ -80,6 +80,85 @@ Each accepts a single string or an array of strings. Rokaki generates adapter‑
 - MySQL: `LIKE`/`LIKE BINARY` and, in nested-like contexts, `REGEXP` where designed
 - SQL Server: `LIKE` with safe escaping; arrays expand into OR chains of parameterized `LIKE` predicates
 
+## Range, BETWEEN, MIN, and MAX filters
+
+Rokaki supports range-style filters as normal filters (not aggregates) across all adapters.
+
+Preferred syntax: use the field name as the key and the filter type as a sub-key. Aliases are supported.
+
+- Sub-keys:
+  - `between` → interpret the value as a range and generate `BETWEEN`/`>=`/`<=` as appropriate
+  - Lower bound: `from`, `since`, `after`, `start`, `min` → `>=`
+  - Upper bound: `to`, `until`, `before`, `end`, `max` → `<=`
+
+- Accepted value shapes for `between` (and also when you pass a range directly as the field value):
+  - Ruby `Range`: `1..10`, `Time.parse('2024-01-01')..Time.parse('2024-12-31')`
+  - Two-element `Array`: `[from, to]`
+  - Hash with aliases: `{ from:, to: }`, `{ since:, until: }`, `{ after:, before: }`, `{ start:, end: }`
+
+Examples:
+
+```ruby
+class ArticleQuery
+  include Rokaki::FilterModel
+  filter_model :article
+
+  # equality filters (existing)
+  filters :author_id
+
+  # LIKEs (existing)
+  define_query_key :q
+  like title: :circumfix
+
+  # No special declarations required for range filters
+end
+
+# Params usage (top-level field)
+Article.filter(
+  published: { between: Date.new(2024,1,1)..Date.new(2024,12,31) }
+)
+
+Article.filter(
+  published: { from: Date.new(2024,1,1), to: Date.new(2024,12,31) }
+)
+
+Article.filter(
+  published: { since: Date.new(2024,1,1), until: Date.new(2024,6,30) }
+)
+
+Article.filter(
+  published: { min: Date.new(2024,1,1) }
+)
+
+Article.filter(
+  published: { max: Date.new(2024,12,31) }
+)
+
+# You can also pass a Range directly without a sub-key
+Article.filter(
+  published: Date.new(2024,1,1)..Date.new(2024,12,31)
+)
+```
+
+- Nested contexts use the same sub-keys:
+
+```ruby
+filter_map do
+  nested :author do
+    # Declare equality/like filters as usual; range filters are value-driven
+    like :first_name, key: :author_first
+    filters :created_at # enabling param key author_created_at
+  end
+end
+
+# Params
+# { author_created_at: { from: ..., to: ... } }
+```
+
+Notes:
+- `min`/`max` are interpreted as lower/upper bounds, not aggregate functions.
+- Passing a `Range`/two-element `Array`/range-shaped `Hash` directly as the field value is treated as a between filter automatically.
+
 ## Nested filters
 
 Use `nested :association` to scope filters to joined tables. Rokaki handles the necessary joins and qualified columns.
