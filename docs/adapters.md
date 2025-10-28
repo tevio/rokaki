@@ -22,7 +22,7 @@ Rokaki generates adapter‑aware SQL for PostgreSQL, MySQL, SQL Server, Oracle, 
   - Case sensitivity follows DB collation by default; future versions may add inline `COLLATE` options
 - Oracle
   - Uses `LIKE`; arrays of terms are OR‑chained; case‑insensitive paths use `UPPER(column) LIKE UPPER(:q)`
-  - See the dedicated page: [Oracle connections](/adapters/oracle) for connection strings, NLS settings, and common errors.
+  - See the dedicated page: [Oracle connections](/rokaki/adapters/oracle) for connection strings, NLS settings, and common errors.
 - SQLite
   - Embedded (no separate server needed)
   - Uses `LIKE`; arrays of terms are OR‑chained across predicates
