@@ -123,8 +123,10 @@ Article.filter(published: { since: Date.new(2024,1,1), until: Date.new(2024,6,30
 Article.filter(published: { min: Date.new(2024,1,1) })   # >= 2024-01-01
 Article.filter(published: { max: Date.new(2024,12,31) }) # <= 2024-12-31
 
-# Between with a two-element Array
-Article.filter(published: [Date.new(2024,5,1), Date.new(2024,12,1)])
+# Arrays are equality lists (IN), not ranges
+# Use a Range or `{ between: [...] }` for range filtering
+Article.filter(published: [Date.new(2024,5,1), Date.new(2024,12,1)]) # => IN (equality list)
+Article.filter(published: { between: [Date.new(2024,5,1), Date.new(2024,12,1)] })
 ```
 
 Nested fields use the same sub-keys and value shapes:
@@ -153,7 +155,7 @@ Article.filter(reviews_published: (Time.utc(2024,1,1)..Time.utc(2024,6,30)))
 
 Behavior notes:
 - `min`/`max` are interpreted as lower/upper bounds, not aggregate functions.
-- Passing a `Range` or two-element `Array` directly as the field value is treated as a between filter automatically.
+- Passing a `Range` directly as the field value is treated as a between filter automatically. Two-element `Array`s are not ranges unless wrapped with `{ between: [...] }`.
 - Arrays with more than two elements are treated as equality lists (`IN (?)`) — use `{ between: [...] }` if you intend a range.
 - `nil` bounds are ignored: only the provided side is applied (e.g., `{ from: t }` becomes `>= t`).
 - All generated predicates are parameterized and adapter‑agnostic (`BETWEEN`, `>=`, `<=`).

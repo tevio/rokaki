@@ -103,13 +103,13 @@ Where `params` can include keys like `q`, `author_first_name`, `author_last_name
 
 All modes accept either a single string or an array of terms.
 
-## What’s new in 0.13.0
+## What’s new in 0.17.0
 
-- Block-form DSL parity across both FilterModel and Filterable
-- Circumfix affix synonyms supported: :parafix, :confix, :ambifix
-- SQL Server adapter support and CI coverage
-- ENV overrides for all adapters in test helpers; improved DB bootstrap in specs
-- Documentation site via GitHub Pages
+- Range filters as first-class filters (non-aggregates): `between`, lower bounds (`from`/`since`/`after`/`start`/`min`), upper bounds (`to`/`until`/`before`/`end`/`max`) on top-level and nested fields.
+- Arrays always mean equality `IN` lists; use a `Range` or `{ between: [from, to] }` to express ranges.
+- Block-form DSL parity across `FilterModel` and `Filterable`, with nested declarations for associations and leaves.
+- Backend auto-detection: adapter inferred from the model connection; pass `db:` only for multi-adapter apps or overrides.
+- Oracle documentation moved under Adapters: see [Database adapters](./adapters) → [Oracle connections](/adapters/oracle).
 
 ## Next steps
 

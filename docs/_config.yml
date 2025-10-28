@@ -8,6 +8,14 @@ baseurl: "/rokaki"
 url: "https://tevio.github.io"
 theme: minima
 
+# Limit header navigation to these pages to avoid top-level Oracle link
+header_pages:
+  - index.md
+  - usage.md
+  - dsl_syntax.md
+  - adapters.md
+  - configuration.md
+
 # Build settings
 markdown: kramdown
 kramdown:
