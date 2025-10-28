@@ -1,5 +1,13 @@
 ### Unreleased
+- (no changes yet)
+
+### 0.17.0 — 2025-10-28
+- Version bump to 0.17.0.
+- Documentation: Updated installation snippets to `~> 0.17`.
 - Documentation: Added comprehensive Range/BETWEEN/MIN/MAX filter docs across README and site (usage, adapters). Clarified sub-key aliases (`between`, `from`/`since`/`after`/`start`/`min`, `to`/`until`/`before`/`end`/`max`), accepted value shapes (Range, 2‑element Array, Hash), nested examples, and equality array semantics (`IN` vs `BETWEEN`).
+- Added Range/BETWEEN/MIN/MAX filters
+
+### 0.16.0 — 2025-10-27
 - Documentation: Added backend auto‑detection feature docs across README and site (index, usage, adapters, configuration). Examples now prefer auto‑detection by default and explain explicit overrides and ambiguity errors.
 - Tests: Added shared examples to exercise auto‑detection behavior under each adapter suite.
 

@@ -12,7 +12,7 @@ For a formal description of the mapping DSL and how payloads are interpreted (jo
 Add the gem to your Gemfile and bundle:
 
 ```ruby
-gem "rokaki", "~> 0.15"
+gem "rokaki", "~> 0.17"
 ```
 
 ```bash
