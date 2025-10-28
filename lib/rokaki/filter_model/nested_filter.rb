@@ -161,8 +161,9 @@ module Rokaki
           # Preferred: value Hash with sub-keys between/from/to/min/max; also accept Range/Array directly
           qualified_col = "#{keys.last.to_s.pluralize}.#{leaf}"
           body = <<-RUBY
-            @model.joins(#{joins_str}).instance_eval do
+            begin
               _val = #{prefix}#{name}
+              rel = @model.joins(#{joins_str})
               if _val.is_a?(Hash)
                 _inner = _val
                 if _val.key?(:between) || _val.key?('between')
@@ -178,29 +179,21 @@ module Rokaki
                   end
                 end
                 if !_from.nil? && !_to.nil?
-                  where("#{qualified_col} BETWEEN :from AND :to", from: _from, to: _to)
+                  rel.where("#{qualified_col} BETWEEN :from AND :to", from: _from, to: _to)
                 elsif !_from.nil?
-                  where("#{qualified_col} >= :from", from: _from)
+                  rel.where("#{qualified_col} >= :from", from: _from)
                 elsif !_to.nil?
-                  where("#{qualified_col} <= :to", to: _to)
+                  rel.where("#{qualified_col} <= :to", to: _to)
                 else
-                  where("#{qualified_col} = :v", v: _val)
+                  rel.where("#{qualified_col} = :v", v: _val)
                 end
               elsif _val.is_a?(Range)
-                where("#{qualified_col} BETWEEN :from AND :to", from: _val.begin, to: _val.end)
+                rel.where("#{qualified_col} BETWEEN :from AND :to", from: _val.begin, to: _val.end)
               elsif _val.is_a?(Array)
-                _from, _to = _val[0], _val[1]
-                if !_from.nil? && !_to.nil?
-                  where("#{qualified_col} BETWEEN :from AND :to", from: _from, to: _to)
-                elsif !_from.nil?
-                  where("#{qualified_col} >= :from", from: _from)
-                elsif !_to.nil?
-                  where("#{qualified_col} <= :to", to: _to)
-                else
-                  self
-                end
+                # Arrays represent IN semantics for equality; use BETWEEN only when explicitly wrapped via :between
+                rel.where("#{qualified_col} IN (?)", _val)
               else
-                where("#{qualified_col} = :v", v: _val)
+                rel.where("#{qualified_col} = :v", v: _val)
               end
             end
           RUBY

@@ -109,6 +109,10 @@ module Rokaki
                   end
                 end
 
+                # Adjust inclusive end-of-day behavior if upper bound appears to be a date or midnight time
+                if !_to.nil? && (_to.is_a?(Date) && !_to.is_a?(DateTime) || (_to.respond_to?(:hour) && _to.hour == 0 && _to.min == 0 && _to.sec == 0))
+                  _to = (_to.respond_to?(:to_time) ? _to.to_time : _to) + 86399
+                end
                 if !_from.nil? && !_to.nil?
                   @model.where("#{key} BETWEEN :from AND :to", from: _from, to: _to)
                 elsif !_from.nil?
@@ -119,9 +123,10 @@ module Rokaki
                   # Fall back to equality with the original hash
                   @model.where(#{key}: _val)
                 end
-              elsif _val.is_a?(Range) || _val.is_a?(Array)
+              elsif _val.is_a?(Range) || (_val.is_a?(Array) && _val.size == 2)
                 #{build_between_query(filter: filter, key: key)}
               else
+                # Equality and IN semantics for arrays and scalars
                 @model.where(#{key}: _val)
               end
             end
