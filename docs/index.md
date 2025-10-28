@@ -23,7 +23,7 @@ Get started below or jump to:
 Add to your application's Gemfile:
 
 ```ruby
-gem "rokaki", "~> 0.17"
+gem "rokaki", "~> 0.18"
 ```
 
 Then:

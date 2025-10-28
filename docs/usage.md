@@ -12,7 +12,7 @@ For a formal description of the mapping DSL and how payloads are interpreted (jo
 Add the gem to your Gemfile and bundle:
 
 ```ruby
-gem "rokaki", "~> 0.17"
+gem "rokaki", "~> 0.18"
 ```
 
 ```bash
@@ -387,3 +387,33 @@ Notes:
 - This approach is production‑ready and requires no core changes to Rokaki.
 - You can cache the generated class by a digest of the payload to avoid recompiling.
 - For maximum safety, validate/allow‑list models/columns coming from untrusted payloads.
+
+
+
+## Inequality and null filters
+
+Use leaf-level sub-keys to express non-equality predicates on top-level or nested fields.
+
+- Not equal: `{ field: { neq: value } }` → `<>`
+- Not in: `{ field: { not_in: [v1, v2] } }` → `NOT IN (...)`
+- Nullability:
+  - `{ field: { is_null: true } }` → `IS NULL`
+  - `{ field: { is_not_null: true } }` (or `{ is_null: false }`) → `IS NOT NULL`
+- Explicit comparisons: `{ field: { gt: x, gte: x, lt: x, lte: x } }`
+
+Examples:
+```ruby
+# Top-level
+Article.filter(title:   { neq: "Draft" })
+Article.filter(title:   { not_in: ["Draft", "Archived"] })
+Article.filter(content: { is_null: true })
+Article.filter(published: { gt: Time.utc(2024,1,1) })
+
+# Nested
+Article.filter(author: { first_name: { neq: "Ada" } })
+Article.filter(reviews: { published: { lte: Time.utc(2024,6,1,12) } })
+```
+
+Notes:
+- Arrays remain equality `IN` lists unless used under `not_in`.
+- These predicates are adapter-agnostic and work the same across PostgreSQL, MySQL, SQL Server, Oracle, and SQLite.

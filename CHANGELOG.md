@@ -1,6 +1,13 @@
 ### Unreleased
 - (no changes yet)
 
+### 0.18.0 — 2025-10-28
+- Feature: inequality and nullability operators at leaf level across all adapters:
+  - `neq`, `not_in`, `is_null`, `is_not_null`, `gt`, `gte`, `lt`, `lte`
+- Tests: shared examples added and wired into all adapter-aware suites; full matrix passing.
+- Docs: usage and DSL syntax updated; adapters page notes portability of these operators.
+- Chore: bump version to 0.18.0 and update install snippets to `~> 0.18`.
+
 ### 0.17.0 — 2025-10-28
 - Version bump to 0.17.0.
 - Documentation: Updated installation snippets to `~> 0.17`.

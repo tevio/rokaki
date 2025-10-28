@@ -81,6 +81,10 @@ database: ":memory:"
 To persist a database file locally, set `SQLITE_DATABASE` to a path (e.g., `tmp/test.sqlite3`).
 
 
+## Inequality and null filters
+
+The following leaf-level operators are adapter-agnostic across PostgreSQL, MySQL, SQL Server, Oracle, and SQLite: `neq`, `not_in`, `is_null`, `is_not_null`, `gt`, `gte`, `lt`, `lte`. Rokaki composes standard SQL (`<>`, `NOT IN`, `IS NULL`/`IS NOT NULL`, `>`, `>=`, `<`, `<=`) with bound parameters.
+
 ## Range/BETWEEN filters
 
 Rokaki’s range filters (`between`, lower-bound aliases like `from`/`min`, and upper-bound aliases like `to`/`max`) are adapter‑agnostic. The library always generates parameterized predicates using `BETWEEN`, `>=`, and `<=` on the target column.
