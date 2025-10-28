@@ -106,6 +106,14 @@ At a leaf field (e.g., `published` or `reviews.published`):
     - `{ published: { min: t1 } }` → `published >= t1`
     - `{ published: { max: t2 } }` → `published <= t2`
 
+- Operator-hash (inequality/null) → non-equality predicates
+  - Keys: `neq`, `not_in`, `is_null`, `is_not_null`, `gt`, `gte`, `lt`, `lte`
+  - Examples:
+    - `{ title: { neq: "Draft" } }` → `title <> 'Draft'`
+    - `{ title: { not_in: ["Draft", "Archived"] } }` → `title NOT IN (...)`
+    - `{ content: { is_null: true } }` → `content IS NULL`
+    - `{ published: { gt: t1, lte: t2 } }` → `published > t1 AND published <= t2`
+
 Notes:
 - Only the leaf level interprets these reserved keys. Join-structure keys do not carry operators.
 - Arrays never imply range; to express a range with an array, use `{ published: { between: [from, to] } }`.

@@ -120,8 +120,38 @@ module Rokaki
                 elsif !_to.nil?
                   @model.where("#{key} <= :to", to: _to)
                 else
-                  # Fall back to equality with the original hash
-                  @model.where(#{key}: _val)
+                  # Inequality/nullability operators
+                  _op_neq         = _val[:neq] || _val['neq']
+                  _op_not_in      = _val[:not_in] || _val['not_in']
+                  _op_is_null     = _val[:is_null] || _val['is_null']
+                  _op_is_not_null = _val[:is_not_null] || _val['is_not_null']
+                  _op_gt          = _val[:gt] || _val['gt']
+                  _op_gte         = _val[:gte] || _val['gte']
+                  _op_lt          = _val[:lt] || _val['lt']
+                  _op_lte         = _val[:lte] || _val['lte']
+
+                  if !_op_neq.nil?
+                    @model.where("#{key} <> :v", v: _op_neq)
+                  elsif _op_not_in
+                    _arr = Array(_op_not_in)
+                    return @model.none if _arr.empty?
+                    @model.where("#{key} NOT IN (?)", _arr)
+                  elsif _op_is_null == true
+                    @model.where("#{key} IS NULL")
+                  elsif _op_is_not_null == true || _op_is_null == false
+                    @model.where("#{key} IS NOT NULL")
+                  elsif !_op_gt.nil?
+                    @model.where("#{key} > :v", v: _op_gt)
+                  elsif !_op_gte.nil?
+                    @model.where("#{key} >= :v", v: _op_gte)
+                  elsif !_op_lt.nil?
+                    @model.where("#{key} < :v", v: _op_lt)
+                  elsif !_op_lte.nil?
+                    @model.where("#{key} <= :v", v: _op_lte)
+                  else
+                    # Fall back to equality with the original hash
+                    @model.where(#{key}: _val)
+                  end
                 end
               elsif _val.is_a?(Range)
                 #{build_between_query(filter: filter, key: key)}

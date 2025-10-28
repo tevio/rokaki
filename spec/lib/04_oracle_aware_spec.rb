@@ -10,6 +10,7 @@ require_relative 'dynamic_listener_spec'
 require_relative 'filterable_block_spec'
 require_relative 'auto_detect_backend_shared_examples'
 require_relative 'filter_model/range_filters_shared_examples'
+require_relative 'filter_model/inequality_filters_shared_examples'
 
 require 'support/database_manager'
 # Ensure Oracle adapter is registered before attempting to establish connection

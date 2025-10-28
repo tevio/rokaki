@@ -185,7 +185,37 @@ module Rokaki
                 elsif !_to.nil?
                   rel.where("#{qualified_col} <= :to", to: _to)
                 else
-                  rel.where("#{qualified_col} = :v", v: _val)
+                  # Inequality/nullability operators
+                  _op_neq         = _val[:neq] || _val['neq']
+                  _op_not_in      = _val[:not_in] || _val['not_in']
+                  _op_is_null     = _val[:is_null] || _val['is_null']
+                  _op_is_not_null = _val[:is_not_null] || _val['is_not_null']
+                  _op_gt          = _val[:gt] || _val['gt']
+                  _op_gte         = _val[:gte] || _val['gte']
+                  _op_lt          = _val[:lt] || _val['lt']
+                  _op_lte         = _val[:lte] || _val['lte']
+
+                  if !_op_neq.nil?
+                    rel.where("#{qualified_col} <> :v", v: _op_neq)
+                  elsif _op_not_in
+                    _arr = Array(_op_not_in)
+                    return rel.none if _arr.empty?
+                    rel.where("#{qualified_col} NOT IN (?)", _arr)
+                  elsif _op_is_null == true
+                    rel.where("#{qualified_col} IS NULL")
+                  elsif _op_is_not_null == true || _op_is_null == false
+                    rel.where("#{qualified_col} IS NOT NULL")
+                  elsif !_op_gt.nil?
+                    rel.where("#{qualified_col} > :v", v: _op_gt)
+                  elsif !_op_gte.nil?
+                    rel.where("#{qualified_col} >= :v", v: _op_gte)
+                  elsif !_op_lt.nil?
+                    rel.where("#{qualified_col} < :v", v: _op_lt)
+                  elsif !_op_lte.nil?
+                    rel.where("#{qualified_col} <= :v", v: _op_lte)
+                  else
+                    rel.where("#{qualified_col} = :v", v: _val)
+                  end
                 end
               elsif _val.is_a?(Range)
                 rel.where("#{qualified_col} BETWEEN :from AND :to", from: _val.begin, to: _val.end)
