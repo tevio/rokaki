@@ -4,6 +4,8 @@ title: Usage
 permalink: /usage
 ---
 
+{% include lang_switcher.html %}
+
 This page shows how to use Rokaki to define filters and apply them to ActiveRecord relations.
 For a formal description of the mapping DSL and how payloads are interpreted (join structure vs leaf-level keys), see Rokaki's DSL Syntax: [/dsl-syntax](/dsl-syntax).
 

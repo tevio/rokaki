@@ -1,0 +1,16 @@
+{%- comment -%}
+Outputs hreflang and canonical links for all configured languages.
+Assumes polyglot-style routing: default_lang at root, others at /:lang/.
+{%- endcomment -%}
+
+{%- if site.languages and site.languages.size > 0 -%}
+  <link rel="canonical" href="{{ site.url }}{{ site.baseurl }}{{ page.url }}" />
+  <link rel="alternate" hreflang="x-default" href="{{ site.url }}{{ site.baseurl }}{{ page.url }}" />
+  {%- for lang in site.languages -%}
+    {%- if lang == site.default_lang -%}
+      <link rel="alternate" hreflang="{{ lang }}" href="{{ site.url }}{{ site.baseurl }}{{ page.url }}" />
+    {%- else -%}
+      <link rel="alternate" hreflang="{{ lang }}" href="{{ site.url }}{{ site.baseurl }}/{{ lang }}{{ page.url }}" />
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}

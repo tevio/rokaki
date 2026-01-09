@@ -6,7 +6,45 @@ description: A DSL for filtering data in web requests (ActiveRecord)
 # This ensures theme assets like /assets/main.css resolve under /rokaki/ on GitHub Pages.
 baseurl: "/rokaki"
 url: "https://tevio.github.io"
+
 theme: minima
+plugins:
+  - jekyll-polyglot
+
+# Internationalization (jekyll-polyglot)
+languages:
+  - en
+  - ja
+  - zh-CN
+  - zh-TW
+  - es
+  - pt-BR
+  - ru
+  - fr
+  - de
+  - ko
+  - it
+  - tr
+  - pl
+  - nl
+  - id
+  - vi
+  - uk
+  - ar
+  - he
+  - hi
+default_lang: en
+rtl_locales: ["ar", "he"]
+exclude_from_localization:
+  - doc/
+  - pkg/
+  - spec/
+  - Gemfile
+  - Gemfile.lock
+  - Rakefile
+  - rokaki.gemspec
+  - Guardfile
+  - README.md
 
 # Limit header navigation to these pages to avoid top-level Oracle link
 header_pages:
